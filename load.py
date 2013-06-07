@@ -6,7 +6,16 @@ import db
 
 LIBS = ['~/Documents/ebook']
 
-def fingerprint(path, block_size=4096):
+def head(stream, n=10):
+    i = 0
+    for each in stream:
+        if i < n:
+            i += 1
+            yield each
+        else:
+            break
+
+def get_fingerprint(path, block_size=4096):
     '''
     get fingerprint of a file, this info is consist of:
     * file size
@@ -35,6 +44,27 @@ def make_ext_filter(wanted):
     return _filter
 
 
+class FileData(object):
+
+    def __init__(self, fingerprint, format, path):
+        self.size = fingerprint[0]
+        self.fingerprint = '.'.join((str(i) for i in fingerprint)).lower()
+        self.format = format
+        self.path = path
+
+    def __str__(self):
+        return '\t'.join([self.fingerprint, self.path])
+
+    def __eq__(self, path_obj):
+        '''
+        path_obj is a instance of class db.Path
+        '''
+        return self.path == path_obj.path
+
+    def __lt__(self, path_obj):
+        return self.path < path_obj.path
+
+
 def scan(paths, filter_=None):
     for path in paths:
         path = os.path.expanduser(path)
@@ -45,55 +75,61 @@ def scan(paths, filter_=None):
                 if filter_ and not filter_(name):
                     continue
                 full_path = os.path.join(root, name)
-                yield full_path, fingerprint(full_path, bs)
+                fingerprint = get_fingerprint(full_path, bs)
+                ext = get_ext(name)
+                yield FileData(fingerprint, ext, full_path)
 
 
-class FileData(object):
-
-    def __init__(self, fingerprint, format, path):
-        self.size = fingerprint[0]
-        self.fingerprint = '.'.join((str(i) for i in fingerprint)).lower()
-        self.format = format
-        self.path = path
 
 
 def diff(left, right):
-    def process():
-        pass
+    '''
+    assume they are already sorted
+    '''
+    left_len = len(left)
+    right_len = len(right)
 
-    lkey = left.next()
-    if lkey is None:
+    left_only = []
+    right_only = []
 
-
-    rkey = right.next()
-
-    while 1:
-        if lkey is None or rkey is None:
-            break
-
-        if lkey == rkey:
-            lkey = left.next()
-            rkey = right.next()
-        elif lkey < rkey:
-            lkey = left.next()
+    l, r = 0, 0
+    while l < left_len and r < right_len:
+        if left[l] == right[r]:
+            l += 1
+            r += 1
+        elif left[l] < right[r]:
+            left_only.append(left[l])
+            l += 1
         else:
-            rkey = right.next()
+            right_only.append(right[r])
+            r += 1
 
-    if lkey is None:
-        for
-        pass
+    if l >= left_len:
+        while r < right_len:
+            right_only.append(right[r])
+            r += 1
+    else:
+        while l < left_len:
+            left_only.append(left[l])
+            l += 1
+
+    return left_only, right_only
 
 
 def main():
-    for path, fingerprint in scan(LIBS, make_ext_filter('pdf')):
-        fdata = FileData(fingerprint, get_ext(path), path)
-        db.api.
-        print fdata.format, fdata.size, fdata.fingerprint
-    #for line in sys.stdin:
-    #    md5, name = line.split(None, 1)
+    fslist = head(scan(LIBS, make_ext_filter('pdf')), n=15)
+    fslist = sorted(fslist, key=lambda fdata: fdata.path)
 
-main()
+    dblist = db.api.get_paths().all()
+    dblist = sorted(dblist, key=lambda path_obj: path_obj.path)
+    #TODO: make faster, is there some distributed way to do this
+
+    new, delete = diff(fslist, dblist)
+    print len(new)
+    print len(delete)
+
+    db.api.add_filedata(new)
 
 
-
-
+if __name__ == '__main__':
+    main()
