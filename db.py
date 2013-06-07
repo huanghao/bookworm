@@ -10,16 +10,23 @@ class File(Base):
 
     __tablename__ = 'files'
 
-    path_hash = Column(String(255), primary_key=True)
+    fingerprint = Column(String(255), primary_key=True)
+    format      = Column(String(255))
+    size        = Column(Integer)
+
+
+class Path(Base):
+
+    __tablename__ = 'paths'
+
+    # id is md5(path), since primary key can't get longer than 255
+    id        = Column(String(255), primary_key=True)
     path      = Column(Text)
-    name      = Column(String(255))
-    size      = Column(Integer)
-    format    = Column(Integer)
-    md5       = Column(String(255))
-    book_id   = Column(String(255), ForeignKey('books.book_id'))
     created_t = Column(Time)
+    file_id   = Column(String(255), ForeignKey('files.fingerprint'))
 
 
+'''
 class Book(Base):
 
     __tablename__ = 'books'
@@ -40,13 +47,14 @@ class Page(Base):
     book_id = Column(String(255), ForeignKey('books.book_id'), primary_key=True)
     page_no = Column(Integer, primary_key=True, autoincrement=False)
     content = Column(Text)
+'''
 
 
 class API(object):
 
     _engine = None
 
-   @property
+    @property
     def engine(self):
         if self._engine is None:
             self._engine = create_engine(DB, echo=True)
@@ -55,4 +63,8 @@ class API(object):
     def create_db(self):
         Base.metadata.create_all(self.engine)
 
+api = API()
+
  
+if __name__ == '__main__':
+    api.create_db()
