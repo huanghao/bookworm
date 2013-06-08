@@ -4,26 +4,34 @@ import sys
 import hashlib
 
 
-def calculate_fingerprint(path, block_size=None):
+class Fingerprint(object):
+    '''Fingerprint of a file, which contains information calcuate by
+    its file size and md5sum of the first data block
     '''
-    get fingerprint of a file, this info is consist of:
-    * file size
-    * md5 of the first block
-    '''
-    block_size = block_size or os.statvfs(path).f_bsize
 
-    with open(path) as file_:
-        sample = file_.read(block_size)
-        stat = os.fstat(file_.fileno())
+    def __init__(self, path, block_size=None):
+        self.path = path
+        self.block_size = block_size or os.statvfs(path).f_bsize
+        self.size, self.md5 = None, None
 
-    return (stat.st_size, hashlib.md5(sample).hexdigest().lower())
+    def calculate(self):
+        with open(self.path) as file_:
+            sample = file_.read(self.block_size)
+            stat = os.fstat(file_.fileno())
 
-def hex_fingerprint(path, block_size=None):
-    size, fingerprint = calculate_fingerprint(path, block_size)
-    return '%s%x' % (fingerprint, size)
+        self.size = stat.st_size
+        self.md5 = hashlib.md5(sample).hexdigest().lower()
+        return self.size, self.md5
+
+    def hex(self):
+        if self.size is None:
+            self.calculate()
+        return '%s%x' % (self.md5, self.size)
+
+    def __str__(self):
+        return self.hex()
 
 
 if __name__ == '__main__':
     for path in sys.argv[1:]:
-        hexfp = hex_fingerprint(path)
-        print '%s %s' % (hexfp, path)
+        print '%s\t%s' % (str(Fingerprint(path)), path)

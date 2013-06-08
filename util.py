@@ -1,6 +1,14 @@
 import os
 
 
+def mkdir_p(path):
+    try:
+        os.makedirs(path)
+    except OSError as err:
+        if err.errno != 17: #OSError: [Errno 17] File exists
+            raise
+
+
 def head(stream, n=10):
     i = 0
     for each in stream:
@@ -11,31 +19,10 @@ def head(stream, n=10):
             break
 
 
-def get_ext(path):
-    return os.path.splitext(path)[1].lstrip(os.path.extsep)
-
-
-def make_ext_filter(wanted):
-    '''
-    make a filter function which will return true if given path
-    in wanted or equals wanted
-    '''
-
-    def _filter(path):
-        ext = get_ext(path)
-        if type(wanted) in (list, tuple):
-            return ext in wanted
-        return ext == wanted
-    return _filter
-
-
 class ProgressBar(object):
 
     def __init__(self, total):
         self.total = total
-        
 
     def goto(self, pos):
-        
         pass
-
