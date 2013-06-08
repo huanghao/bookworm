@@ -14,16 +14,6 @@ def human_readable_bytes(num, k=1024.):
     return "%3.1f%s" % (num, 'TB')
 
 
-class ProgressBar(object):
-
-    width = 70
-
-    def __init__(self, total):
-        self.total = total
-
-    def reach(self, current):
-        pass
-
 
 class PDF(object):
 
