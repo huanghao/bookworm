@@ -9,7 +9,7 @@ class Info(object):
         self.fingerprint = fingerprint
         self.size = size
         self.format = format
-        self.path = path.decode('utf8')
+        self.path = path
 
     def __str__(self):
         return '\t'.join([self.format,

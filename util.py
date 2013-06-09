@@ -19,10 +19,10 @@ def head(stream, n=10):
             break
 
 
-class ProgressBar(object):
+def human_readable_bytes(num, k=1024.):
+    for x in ['bytes','KB','MB','GB']:
+        if num < k and num > -k:
+            return "%3.1f%s" % (num, x)
+        num /= k
+    return "%3.1f%s" % (num, 'TB')
 
-    def __init__(self, total):
-        self.total = total
-
-    def goto(self, pos):
-        pass

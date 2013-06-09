@@ -1,0 +1,4 @@
+* support multi format: chm, doc, text
+* support multi language: chinese
+* add repo checker to find and deal with all malformed books
+* repochk report duplicated files
