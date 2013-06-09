@@ -1,5 +1,6 @@
 import sys
 import logging
+import argparse
 
 from scan import scan, make_ext_filter
 from repo import Repo, RepoItem
@@ -9,11 +10,11 @@ from queue import QueueItem
 logger = logging.getLogger('updater')
 
 
-def update(repo_path, lib_paths):
+def update(repo_path, lib_paths, max_read=None):
     repo = Repo(repo_path)
     queue = repo.new_queue()
+    n = 0
 
-    #for info in head(scan(lib_paths, make_ext_filter('pdf')), n=2):
     for info in scan(lib_paths, make_ext_filter('pdf')):
         key = info.fingerprint
         status = repo.check(key)
@@ -25,25 +26,26 @@ def update(repo_path, lib_paths):
                 logger.info('new file added: %s' % key)
                 queue.add(QueueItem(key))
 
+                n += 1
+                if max_read and n >= max_read:
+                    break
+
     queue.save()
 
 
-def usage():
-    print '''Usage: %s <repo_path> <lib_path1> [lib_path2 ...]
-
-Scan files in lib paths to update meta info into repo,
-finally create a queue file into repo root.''' % sys.argv[0]
+def parse_args():
+    parser = argparse.ArgumentParser(description='Scan files in lib paths to update meta info into repo, finally create a queue file into repo root.')
+    parser.add_argument('repo_path')
+    parser.add_argument('lib_paths', nargs='+')
+    parser.add_argument('-n', '--max-read', type=int,
+        help='number of files to read at most')
+    parser.add_argument('-v', '--verbose',
+        help='turn on verbose mode', action='store_true')
+    return parser.parse_args()
 
 
 if __name__ == '__main__':
-    if len(sys.argv) < 3:
-        usage()
-        sys.exit(1)
-
-    repo_path = sys.argv[1]
-    lib_paths = sys.argv[2:]
-
-    logging.basicConfig(level=logging.INFO,
-                        stream=sys.stdout)
-
-    sys.exit(update(repo_path, lib_paths))
+    opts = parse_args()
+    level = logging.DEBUG if opts.verbose else logging.INFO
+    logging.basicConfig(level=level, stream=sys.stdout)
+    sys.exit(update(opts.repo_path, opts.lib_paths, opts.max_read))

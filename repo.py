@@ -69,7 +69,7 @@ class RepoItem(object):
         with open(self.text_path, 'w') as fp:
             fp.write(text)
 
-    def mark_malformed(self, flag):
+    def mark_malformed(self):
         open(self.malformed_path, 'w').close()
 
     def put(self, info):

@@ -60,8 +60,7 @@ class DB(object):
 
 
 def parse_args():
-    parser = argparse.ArgumentParser('''Search repo to index all book
-
+    parser = argparse.ArgumentParser(description='''Search repo to index all book
     If there are queue files in root path of repo, it will only deal with those
     queue files. Otherwise it could walk through the whole repo to index them
     all.''')
