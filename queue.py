@@ -14,6 +14,8 @@ class QueueItem(object):
             self.text_path = os.path.join(repo_path,
                                           key_to_path(key),
                                           'text')
+    def __str__(self):
+        return self.key
 
 
 class QueueReader(object):
@@ -66,6 +68,6 @@ class QueueWriter(object):
         if not self.items:
             return
 
-        data = '\n'.join([ str(item) for item in self.items ])
+        data = os.linesep.join([ str(item) for item in self.items ])
         with open(self.path, 'w') as fp:
-            fp.write(data)
+            fp.write(data + os.linesep)

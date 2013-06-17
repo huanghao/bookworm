@@ -5,6 +5,7 @@ import argparse
 import xapian
 
 from repo import Repo
+import guess_language
 
 
 logger = logging.getLogger('indexer')
@@ -40,17 +41,29 @@ class DB(object):
             # Create or open the database we're going to be writing to.
             self.db = xapian.WritableDatabase(self.root, xapian.DB_CREATE_OR_OPEN)
 
+    def _index_text(self, docpath):
+        text = open(docpath).read()
+        lang = guess_language.classifier.guess(text[:1024*100])
+        logger.info('lanuage is %s:%s' % (lang, docpath))
+
+        doc = xapian.Document()
+
+        if lang == 'english':
+            termgenerator = xapian.TermGenerator()
+            termgenerator.set_document(doc)
+            termgenerator.set_stemmer(xapian.Stem("en"))
+            termgenerator.index_text(text)
+        else:
+            from mmseg.search import seg_txt_2_dict
+            for word, value in seg_txt_2_dict(text).iteritems():
+                doc.add_term(word, value)
+                logger.debug('index:%s:%s' % (word, value))
+        return doc
+
     def index_doc(self, key, docpath):
         self._create()
 
-        termgenerator = xapian.TermGenerator()
-        termgenerator.set_stemmer(xapian.Stem("en"))
-
-        doc = xapian.Document()
-        termgenerator.set_document(doc)
-
-        termgenerator.index_text(open(docpath).read())
-
+        doc = self._index_text(docpath)
         #TODO: add meta info to data
         doc.set_data(docpath)
 
@@ -66,7 +79,8 @@ def parse_args():
     all.''')
     parser.add_argument('db_path')
     parser.add_argument('repo_path')
-    parser.add_argument('-v', '--verbose', help='turn on verbose mode')
+    parser.add_argument('-v', '--verbose',
+        action='store_true', help='turn on verbose mode')
     return parser.parse_args()
 
 
