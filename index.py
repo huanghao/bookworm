@@ -4,66 +4,35 @@ import argparse
 
 import xapian
 
-from repo import Repo
 import guess_language
+from repo import Repo, RepoItem
+from fingerprint import FingerPrint
 
 
 logger = logging.getLogger('indexer')
 
-
-def index(dbpath, repopath, opts):
-    db = DB(dbpath)
-    repo = Repo(repopath)
-
-    for queue in repo.iter_queue():
-        while 1:
-            item = queue.next()
-            if not item:
-                break
-            try:
-                db.index_doc(item.key, item.text_path)
-            except Exception as err:
-                queue.mark_as_error(str(err))
-                logger.error('Failed to index:%s:%s' % (err, item.key))
-            else:
-                queue.mark_as_done()
-                logger.info('%s has been indexed' % item.key)
-
-
 class DB(object):
 
-    def __init__(self, dbpath):
-        self.root = dbpath
-        self.db = None
+    def __init__(self, root):
+        self.root = root
+        self.db = xapian.WritableDatabase(self.root, xapian.DB_CREATE_OR_OPEN)
 
-    def _create(self):
-        if self.db is None:
-            # Create or open the database we're going to be writing to.
-            self.db = xapian.WritableDatabase(self.root, xapian.DB_CREATE_OR_OPEN)
+    def contains(self, key):
+        return False
 
-    def _index_text(self, docpath):
-        text = open(docpath).read()
+    def index(self, key, text):
         lang = guess_language.classifier.guess(text[:1024*100])
-        logger.info('lanuage is %s:%s' % (lang, docpath))
+        logger.debug('lanuage is %s:%s' % (lang, docpath))
+        if lang != 'english':
+            logger.warn('language %s is not supported' % lang)
+            return
 
         doc = xapian.Document()
+        termgenerator = xapian.TermGenerator()
+        termgenerator.set_document(doc)
+        termgenerator.set_stemmer(xapian.Stem("en"))
+        termgenerator.index_text(text)
 
-        if lang == 'english':
-            termgenerator = xapian.TermGenerator()
-            termgenerator.set_document(doc)
-            termgenerator.set_stemmer(xapian.Stem("en"))
-            termgenerator.index_text(text)
-        else:
-            from mmseg.search import seg_txt_2_dict
-            for word, value in seg_txt_2_dict(text).iteritems():
-                doc.add_term(word, value)
-                logger.debug('index:%s:%s' % (word, value))
-        return doc
-
-    def index_doc(self, key, docpath):
-        self._create()
-
-        doc = self._index_text(docpath)
         #TODO: add meta info to data
         doc.set_data(docpath)
 
@@ -73,7 +42,36 @@ class DB(object):
 
 
 def Indexer(object):
-    pass
+
+    def __init__(self, db_path, repo_path):
+        self.db = DB(db_path)
+        self.repo = Repo(repo_path)
+
+    def index(self, docpath):
+        key = FingerPrint(docpath).hex()
+
+        status = self.repo.check(key)
+        if status == RepoItem.Status.OK:
+            if repo.merge_path(key, docpath):
+                logger.info('path updated: %s' % key)
+        elif status == RepoItem.Status.DoesNotExist:
+            if repo.put(key, info):
+                logger.info('new file added: %s' % key)
+
+
+        def update_repo():
+            self.repo.put(key, docpath)
+
+        def update_db():
+            item = self.repo.get(key)
+            self.db.index(key, item.get_text())
+
+        if self.repo.contains(key):
+            if not self.db.contains(key):
+                update_db()
+        else:
+            update_repo()
+            update_db()
 
 
 def main(args):
