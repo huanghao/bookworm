@@ -1,15 +1,18 @@
+import os
 import sys
+import json
 import logging
 import argparse
 
 import xapian
 
 import guess_language
-from repo import Repo, RepoItem
-from fingerprint import FingerPrint
+from repo import Repo
+from fingerprint import Fingerprint
 
 
 logger = logging.getLogger('indexer')
+
 
 class DB(object):
 
@@ -20,9 +23,10 @@ class DB(object):
     def contains(self, key):
         return False
 
-    def index(self, key, text):
+    def put(self, key, item):
+        text = item.text
         lang = guess_language.classifier.guess(text[:1024*100])
-        logger.debug('lanuage is %s:%s' % (lang, docpath))
+        logger.debug('lanuage is %s' % lang)
         if lang != 'english':
             logger.warn('language %s is not supported' % lang)
             return
@@ -34,44 +38,32 @@ class DB(object):
         termgenerator.index_text(text)
 
         #TODO: add meta info to data
-        doc.set_data(docpath)
+        doc.set_data(json.dumps(item.meta))
 
         idterm = u"Q" + key
         doc.add_boolean_term(idterm)
         self.db.replace_document(idterm, doc)
 
 
-def Indexer(object):
+class Indexer(object):
 
     def __init__(self, db_path, repo_path):
         self.db = DB(db_path)
         self.repo = Repo(repo_path)
 
     def index(self, docpath):
-        key = FingerPrint(docpath).hex()
-
-        status = self.repo.check(key)
-        if status == RepoItem.Status.OK:
-            if repo.merge_path(key, docpath):
-                logger.info('path updated: %s' % key)
-        elif status == RepoItem.Status.DoesNotExist:
-            if repo.put(key, info):
-                logger.info('new file added: %s' % key)
-
-
-        def update_repo():
-            self.repo.put(key, docpath)
-
-        def update_db():
-            item = self.repo.get(key)
-            self.db.index(key, item.get_text())
+        key = Fingerprint(docpath).hex()
 
         if self.repo.contains(key):
-            if not self.db.contains(key):
-                update_db()
+            self.repo.update(key, docpath)
         else:
-            update_repo()
-            update_db()
+            self.repo.put(key, docpath)
+
+        if self.db.contains(key):
+            logger.inf('already indexed')
+        else:
+            item = self.repo.get(key)
+            self.db.put(key, item)
 
 
 def main(args):

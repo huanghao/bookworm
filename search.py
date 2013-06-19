@@ -30,15 +30,13 @@ def search(dbpath, querystring, offset=0, pagesize=10):
     # And print out something about each match
     matches = []
     for match in enquire.get_mset(offset, pagesize):
-        path = match.document.get_data()
+        meta = json.loads(match.document.get_data())
 
-        print u"%(rank)i: #%(docid)3.3i %(path)s" % {
+        print u"%(rank)i: #%(docid)3.3i" % {
             'rank': match.rank + 1,
             'docid': match.docid,
-            'path': path,
             }
-
-        meta = json.load(open(os.path.join(os.path.dirname(path), 'meta')))
+        print '\n'.join(meta['paths'])
         from pprint import pprint
         pprint(meta)
 
