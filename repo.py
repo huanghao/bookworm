@@ -25,9 +25,14 @@ class Repo(object):
         self.root = os.path.abspath(root)
 
     def contains(self, key):
+        if self.is_bad(key):
+            return True
         return os.path.exists(self.meta_path(key))
 
     def update(self, key, docpath):
+        if self.is_bad(key):
+            return
+
         def merge_path(docpath):
             meta = self.load_meta(key)
             # json load string as unicode, in order to compare, change to unicode type first
@@ -35,11 +40,17 @@ class Repo(object):
             if upath not in meta['paths']:
                 meta['paths'][upath] = now()
                 self.dump_meta(data)
-        merge_path(docpath)
+                logger.info('append path to repo item %s', key)
+
+        if os.path.exists(self.text_path(key)):
+            merge_path(docpath)
+        else:
+            self.put(key, docpath)
 
     def put(self, key, docpath):
         docpath = os.path.abspath(docpath)
-        mkdir_p(self.key_to_path(key))
+        itempath = self.key_to_path(key)
+        mkdir_p(itempath)
 
         logger.info('reading pdf: %s' % docpath)
         try:
@@ -56,7 +67,10 @@ class Repo(object):
             self.dump_text(key, get_pdf_text(docpath))
         except FailedToRead as err:
             logger.error(err)
-            self.mark_as_bad(str(err))
+            self.mark_as_bad(key, str(err))
+            raise
+
+        logger.info('save %s -> %s' % (docpath, itempath))
 
     class Item(object):
 
@@ -75,15 +89,19 @@ class Repo(object):
     def meta_path(self, key):
         return os.path.join(self.key_to_path(key), 'meta')
 
+    def text_path(self, key):
+        return os.path.join(self.key_to_path(key), 'text')
+
+    def bad_path(self, key):
+        return os.path.join(self.key_to_path(key), 'bad')
+
+    #-----------------------------------
     def load_meta(self, key):
         return json.load(open(self.meta_path(key)))
 
     def dump_meta(self, key, data):
         with open(self.meta_path(key), 'w') as fp:
             return json.dump(data, fp)
-
-    def text_path(self, key):
-        return os.path.join(self.key_to_path(key), 'text')
 
     def load_text(self, key):
         return open(self.text_path(key)).read()
@@ -96,3 +114,6 @@ class Repo(object):
         path = os.path.join(self.key_to_path(key), 'bad')
         with open(path, 'w') as fp:
             fp.write(reason+'\n')
+
+    def is_bad(self, key):
+        return os.path.exists(self.bad_path(key))

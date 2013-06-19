@@ -1,11 +1,13 @@
 #!/usr/bin/env python
 import os
+import sys
 import json
 import logging
-import sys
+import argparse
+
 import xapian
 
-### Start of example code.
+
 def search(dbpath, querystring, offset=0, pagesize=10):
     # offset - defines starting point within result set
     # pagesize - defines number of records to retrieve
@@ -51,7 +53,21 @@ def search(dbpath, querystring, offset=0, pagesize=10):
         offset + pagesize,
         ' '.join(str(docid) for docid in matches),
         )
-### End of example code.
 
-logging.basicConfig(level=logging.INFO)
-search(dbpath = sys.argv[1], querystring = " ".join(sys.argv[2:]))
+
+def parse_args():
+    parser = argparse.ArgumentParser(description='''Search db''')
+    parser.add_argument('keywords', nargs='*', help='keywords')
+    parser.add_argument('-d', '--db-path', default='db',
+        help='xapian db root path')
+    parser.add_argument('-v', '--verbose',
+        action='store_true', help='turn on verbose mode')
+    return parser.parse_args()
+
+
+if __name__ == '__main__':
+    args = parse_args()
+
+    level = logging.DEBUG if args.verbose else logging.INFO
+    logging.basicConfig(level=level)
+    search(dbpath=args.db_path, querystring=' '.join(args.keywords))

@@ -43,6 +43,8 @@ class DB(object):
         idterm = u"Q" + key
         doc.add_boolean_term(idterm)
         self.db.replace_document(idterm, doc)
+        self.db.commit()
+        logger.info('index had made %s', idterm)
 
 
 class Indexer(object):
@@ -54,16 +56,20 @@ class Indexer(object):
     def index(self, docpath):
         key = Fingerprint(docpath).hex()
 
-        if self.repo.contains(key):
-            self.repo.update(key, docpath)
-        else:
-            self.repo.put(key, docpath)
-
-        if self.db.contains(key):
-            logger.inf('already indexed')
-        else:
+        try:
+            if self.repo.contains(key):
+                self.repo.update(key, docpath)
+            else:
+                self.repo.put(key, docpath)
             item = self.repo.get(key)
-            self.db.put(key, item)
+        except Exception, err:
+            logger.error(str(err))
+        else:
+            if self.db.contains(key):
+                logger.info('already indexed')
+            else:
+                
+                self.db.put(key, item)
 
 
 def main(args):
