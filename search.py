@@ -45,10 +45,6 @@ def search(dbpath, querystring, offset=0, pagesize=10):
         logger.debug(json.dumps(meta, indent=4))
 
 
-        doc = match.document
-        return doc
-
-
 def parse_args():
     parser = argparse.ArgumentParser(description='''Search db''')
     parser.add_argument('keywords', nargs='*', help='keywords')
