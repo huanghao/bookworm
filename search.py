@@ -7,6 +7,7 @@ import argparse
 
 import xapian
 
+logger = logging.getLogger(os.path.basename(__file__)[:-3])
 
 def search(dbpath, querystring, offset=0, pagesize=10):
     # offset - defines starting point within result set
@@ -32,20 +33,18 @@ def search(dbpath, querystring, offset=0, pagesize=10):
     # And print out something about each match
     matches = []
     for match in enquire.get_mset(offset, pagesize):
-        meta = json.loads(match.document.get_data())
-
-        print u"%(rank)i: #%(docid)3.3i" % {
-            'rank': match.rank + 1,
-            'docid': match.docid,
-            }
-        print '\n'.join(meta['paths'])
-        from pprint import pprint
-        pprint(meta)
-
         matches.append(match.docid)
 
+        meta = json.loads(match.document.get_data())
+        logger.info('%d:%s', len(matches),
+                    '\n'.join([i.replace('/home/huanghao/Documents/ebook/', '') for i in meta['paths']]))
+        logger.debug("rank: %i: docid:#%i",
+                     match.rank + 1,
+                     match.docid)
+        logger.debug(json.dumps(meta, indent=4))
+
+
     # Finally, make sure we log the query and displayed results
-    logger = logging.getLogger("xapian.search")
     logger.info(
         "'%s'[%i:%i] = %s",
         querystring,
