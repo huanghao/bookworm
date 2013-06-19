@@ -2,6 +2,7 @@
 import os
 import sys
 import json
+import math
 import logging
 import argparse
 
@@ -36,31 +37,27 @@ def search(dbpath, querystring, offset=0, pagesize=10):
         matches.append(match.docid)
 
         meta = json.loads(match.document.get_data())
-        logger.info('%d:%s', len(matches),
+        logger.info('[%0*d]:%s',
+                    int(math.log(pagesize, 10)+1),
+                    match.rank + 1,
+                    #match.docid,
                     '\n'.join([i.replace('/home/huanghao/Documents/ebook/', '') for i in meta['paths']]))
-        logger.debug("rank: %i: docid:#%i",
-                     match.rank + 1,
-                     match.docid)
         logger.debug(json.dumps(meta, indent=4))
 
 
-    # Finally, make sure we log the query and displayed results
-    logger.info(
-        "'%s'[%i:%i] = %s",
-        querystring,
-        offset,
-        offset + pagesize,
-        ' '.join(str(docid) for docid in matches),
-        )
+        doc = match.document
+        return doc
 
 
 def parse_args():
     parser = argparse.ArgumentParser(description='''Search db''')
     parser.add_argument('keywords', nargs='*', help='keywords')
     parser.add_argument('-d', '--db-path', default='db',
-        help='xapian db root path')
-    parser.add_argument('-v', '--verbose',
-        action='store_true', help='turn on verbose mode')
+                        help='xapian db root path')
+    parser.add_argument('-v', '--verbose', action='store_true',
+                        help='turn on verbose mode')
+    parser.add_argument('-n', '--max-result', type=int, default=10,
+                        help='max number of result to retrieve')
     return parser.parse_args()
 
 
@@ -69,4 +66,6 @@ if __name__ == '__main__':
 
     level = logging.DEBUG if args.verbose else logging.INFO
     logging.basicConfig(level=level)
-    search(dbpath=args.db_path, querystring=' '.join(args.keywords))
+    search(dbpath=args.db_path,
+           querystring=' '.join(args.keywords),
+           pagesize=args.max_result)
