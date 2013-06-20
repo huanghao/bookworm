@@ -1,4 +1,5 @@
 import os
+import sys
 import json
 
 from search import search
@@ -32,7 +33,16 @@ class Root(object):
 
 
 if __name__ == '__main__':
-    cherrypy.config.update({'server.socket_host': '0.0.0.0',
-                            'server.socket_port': 8080,
-                           })
-    cherrypy.quickstart(Root())
+    cherrypy.config.update({
+            'server.socket_host': '0.0.0.0',
+            'server.socket_port': 8080,
+            })
+
+    path = os.path.abspath(os.path.join(os.path.dirname(__file__), 'ebook'))
+    conf = {'/files': {'tools.staticdir.on': True,
+                       'tools.staticdir.dir': path,
+                       'tools.staticdir.content_types': {'pdf': 'application/pdf'},
+                       },
+            }
+
+    cherrypy.quickstart(Root(), '/', config=conf)
