@@ -3,12 +3,16 @@ import sys
 import json
 
 from search import search
+from repo import key_to_path
 
 import cherrypy
 from mako.template import Template
 from mako.lookup import TemplateLookup
 
 db_path = os.path.join(os.path.dirname(__file__), 'db')
+repo_path = os.path.abspath(os.path.join(os.path.dirname(__file__), 'repo'))
+lib_path = os.path.abspath(os.path.join(os.path.dirname(__file__), 'ebook'))
+
 template_dir = os.path.join(os.path.dirname(__file__), 'template')
 lookup = TemplateLookup(directories=[template_dir])
 
@@ -21,14 +25,21 @@ class Root(object):
         if q:
             for match in search(db_path, q, pagesize=50):
                 meta = json.loads(match.document.get_data())
+
                 paths = [ (os.path.join('files', path.split('Documents/')[1]),
                            os.path.basename(path))
                           for path in meta['paths'] ]
+
                 item = {
                     'rank': match.rank,
                     'docid': match.docid,
                     'paths': paths,
                     }
+
+                thumbpath = os.path.join(key_to_path(meta['key']), 'thumb.png')
+                if os.path.exists(os.path.join(repo_path, thumbpath)):
+                    item['thumb'] = os.path.join('repo', thumbpath)
+
                 result.append(item)
 
         tmpl = lookup.get_template('index.html')
@@ -42,11 +53,13 @@ if __name__ == '__main__':
             'server.socket_port': 8080,
             })
 
-    path = os.path.abspath(os.path.join(os.path.dirname(__file__), 'ebook'))
     conf = {'/files': {'tools.staticdir.on': True,
-                       'tools.staticdir.dir': path,
+                       'tools.staticdir.dir': lib_path,
                        'tools.staticdir.content_types': {'pdf': 'application/pdf'},
                        },
+            '/repo': {'tools.staticdir.on': True,
+                      'tools.staticdir.dir': repo_path,
+                      'tools.staticdir.content_types': {'pdf': 'application/pdf'},
+                      },
             }
-
     cherrypy.quickstart(Root(), '/', config=conf)

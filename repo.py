@@ -4,7 +4,7 @@ import logging
 import datetime
 
 from util import mkdir_p, get_ext, get_file_size
-from reader import get_pdf_num_pages, get_pdf_text, FailedToRead
+from reader import get_pdf_num_pages, get_pdf_text, FailedToRead, make_thumbnail
 
 
 logger = logging.getLogger('repo')
@@ -21,53 +21,60 @@ class Repo(object):
     def __init__(self, root):
         self.root = os.path.abspath(root)
 
-    def check(self, key):
-        if self.is_bad(key):
-            return -1
-        return 1 if os.path.exists(self.meta_path(key)) else 0
+    def _put_meta(self, key, docpath):
+        self.dump_meta(key, {
+            'key': key,
+            'format': get_ext(docpath),
+            'size': get_file_size(docpath),
+            'paths': {
+                docpath: now(),
+                },
+            'num_pages': get_pdf_num_pages(docpath),
+            })
+    def _merge_path(self, key, docpath):
+        meta = self.load_meta(key)
+        # json load string as unicode, in order to compare, change to unicode type first
+        upath = docpath if isinstance(docpath, unicode) else docpath.decode('utf8')
+        if upath not in meta['paths']:
+            meta['paths'][upath] = now()
+            self.dump_meta(meta)
+            logger.info('append path to repo item %s', key)
 
-    def update(self, key, docpath):
-        if self.is_bad(key):
-            return
+    def _put_text(self, key, docpath):
+        self.dump_text(key, get_pdf_text(docpath))
 
-        def merge_path(docpath):
-            meta = self.load_meta(key)
-            # json load string as unicode, in order to compare, change to unicode type first
-            upath = docpath if isinstance(docpath, unicode) else docpath.decode('utf8')
-            if upath not in meta['paths']:
-                meta['paths'][upath] = now()
-                self.dump_meta(meta)
-                logger.info('append path to repo item %s', key)
-
-        if os.path.exists(self.text_path(key)):
-            merge_path(docpath)
-        else:
-            self.put(key, docpath)
+    def _put_thumbnail(self, key, docpath):
+        make_thumbnail(docpath, self.thumb_path(key))
 
     def put(self, key, docpath):
+        changed = 0
+        if self.is_bad(key):
+            return changed
+
         docpath = os.path.abspath(docpath)
         itempath = self.key_to_path(key)
-        mkdir_p(itempath)
-
+        if not os.path.exists(itempath):
+            mkdir_p(itempath)
+            changed += 1
+        
         logger.info('reading pdf: %s' % docpath)
         try:
-            self.dump_meta(key, {
-                'key': key,
-                'format': get_ext(docpath),
-                'size': get_file_size(docpath),
-                'paths': {
-                    docpath: now(),
-                    },
-                'num_pages': get_pdf_num_pages(docpath),
-                })
-
-            self.dump_text(key, get_pdf_text(docpath))
+            if not os.path.exists(self.meta_path(key)):
+                self._put_meta(key, docpath)
+                changed += 1
+            if not os.path.exists(self.text_path(key)):
+                self._put_text(key, docpath)
+                changed += 1
+            if not os.path.exists(self.thumb_path(key)):
+                self._put_thumbnail(key, docpath)
+                changed += 1
         except FailedToRead as err:
             logger.error(err)
             self.mark_as_bad(key, str(err))
             raise
 
         logger.info('save %s -> %s' % (docpath, itempath))
+        return changed
 
     class Item(object):
 
@@ -91,6 +98,9 @@ class Repo(object):
 
     def bad_path(self, key):
         return os.path.join(self.key_to_path(key), 'bad')
+
+    def thumb_path(self, key):
+        return os.path.join(self.key_to_path(key), 'thumb.png')
 
     #-----------------------------------
     def load_meta(self, key):

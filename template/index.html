@@ -12,7 +12,14 @@
     %for item in result:
         <li>
         %for link, name in item['paths']:
-            <p><a href="${link}">${name}</a></p>
+            <p><a href="${link}" target="new">${name}</a></p>
+            %if item.get('thumb'):
+            <div>
+              <a href="${item['thumb']}" target="new">
+                <img src="${item['thumb']}" style="border: 1px solid gray; height:200px;" />
+              </a>
+            </div>
+            %endif
         %endfor
         </li>
     %endfor

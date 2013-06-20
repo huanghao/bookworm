@@ -20,3 +20,10 @@ def get_pdf_text(path):
         return subprocess.check_output(['pdf2txt.py', path])
     except Exception as err:
         raise FailedToRead('failed to get pdf content:%s:%s' % (err, path))
+
+
+def make_thumbnail(pdfpath, thumbpath):
+    try:
+        return subprocess.check_output(['convert', '%s[0]' % pdfpath, thumbpath])
+    except Exception as err:
+        raise FailedToRead('failed to make thumbnail:%s' % pdfpath)

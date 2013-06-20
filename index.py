@@ -72,28 +72,16 @@ class Indexer(object):
 
     def index(self, docpath):
         key = Fingerprint(docpath).hex()
-        skip = 0
 
         try:
-            ret = self.repo.check(key)
-            if ret < 0:
-                skip = 1
-            elif ret == 0:
-                self.repo.put(key, docpath)
-            else:
-                self.repo.update(key, docpath)
-
-            if not skip:
-                item = self.repo.get(key)
+            changed = self.repo.put(key, docpath)
+            item = self.repo.get(key)
         except Exception, err:
             logger.error(str(err))
-            skip = 1
-
-        if not skip:
+        else:
             if not self.force_index and self.db.contains(key):
                 logger.info('already indexed')
             else:
-                
                 self.db.put(key, item)
 
 
