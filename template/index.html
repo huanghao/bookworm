@@ -1,0 +1,16 @@
+<title>Search ebook</title>
+
+<h1>Search ebook</h1>
+
+<form method='GET'>
+  <input type='text' name='q' value="${q}"/>
+  <input type='submit' value='Search' />
+</form>
+
+<ul>
+%for item in result:
+  <li>
+    ${'\n'.join(item['paths'])}
+  </li>
+%endfor
+</ul>

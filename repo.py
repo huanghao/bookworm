@@ -1,8 +1,5 @@
 import os
 import json
-import time
-import glob
-import shutil
 import logging
 import datetime
 
@@ -39,7 +36,7 @@ class Repo(object):
             upath = docpath if isinstance(docpath, unicode) else docpath.decode('utf8')
             if upath not in meta['paths']:
                 meta['paths'][upath] = now()
-                self.dump_meta(data)
+                self.dump_meta(meta)
                 logger.info('append path to repo item %s', key)
 
         if os.path.exists(self.text_path(key)):

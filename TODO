@@ -1,3 +1,5 @@
+* fix: pdf2txt may hang forever
+* add setup.py
 * refactor: split item from repo
 * support multi format: chm, doc, text
 * support multi language: chinese

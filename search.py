@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 import os
-import sys
 import json
 import math
 import logging
@@ -31,11 +30,11 @@ def search(dbpath, querystring, offset=0, pagesize=10):
     enquire = xapian.Enquire(db)
     enquire.set_query(query)
 
-    # And print out something about each match
-    matches = []
-    for match in enquire.get_mset(offset, pagesize):
-        matches.append(match.docid)
+    return enquire.get_mset(offset, pagesize)
 
+
+def print_search(dbpath, querystring, offset=0, pagesize=10):
+    for match in search(dbpath, querystring, offset, pagesize):
         meta = json.loads(match.document.get_data())
         logger.info('[%0*d]:%s',
                     int(math.log(pagesize, 10)+1),
@@ -62,6 +61,6 @@ if __name__ == '__main__':
 
     level = logging.DEBUG if args.verbose else logging.INFO
     logging.basicConfig(level=level)
-    search(dbpath=args.db_path,
-           querystring=' '.join(args.keywords),
-           pagesize=args.max_result)
+    print_search(dbpath=args.db_path,
+                 querystring=' '.join(args.keywords),
+                 pagesize=args.max_result)
