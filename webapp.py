@@ -19,12 +19,16 @@ class Root(object):
     def index(self, q=''):
         result = []
         if q:
-            for match in search(db_path, q):
+            for match in search(db_path, q, pagesize=50):
+                meta = json.loads(match.document.get_data())
+                paths = [ (os.path.join('files', path.split('Documents/')[1]),
+                           os.path.basename(path))
+                          for path in meta['paths'] ]
                 item = {
                     'rank': match.rank,
                     'docid': match.docid,
+                    'paths': paths,
                     }
-                item.update(json.loads(match.document.get_data()))
                 result.append(item)
 
         tmpl = lookup.get_template('index.html')
