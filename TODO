@@ -1,4 +1,3 @@
-* add readme show how to run
 * fix: pdf2txt may hang forever
 * add setup.py
 * refactor: split item from repo
