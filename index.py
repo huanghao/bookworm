@@ -21,7 +21,19 @@ class DB(object):
         self.db = xapian.WritableDatabase(self.root, xapian.DB_CREATE_OR_OPEN)
 
     def contains(self, key):
-        return False
+        queryparser = xapian.QueryParser()
+        queryparser.set_stemmer(xapian.Stem("en"))
+        queryparser.set_stemming_strategy(queryparser.STEM_SOME)
+        queryparser.add_prefix("key", "Q")
+
+        querystring = "key:%s" % key
+        query = queryparser.parse_query(querystring)
+
+        enquire = xapian.Enquire(self.db)
+        enquire.set_query(query)
+
+        mset = enquire.get_mset(0, 1)
+        return len(mset) > 0
 
     def put(self, key, item):
         text = item.text
@@ -55,16 +67,24 @@ class Indexer(object):
 
     def index(self, docpath):
         key = Fingerprint(docpath).hex()
+        skip = 0
 
         try:
-            if self.repo.contains(key):
-                self.repo.update(key, docpath)
-            else:
+            ret = self.repo.check(key)
+            if ret < 0:
+                skip = 1
+            elif ret == 0:
                 self.repo.put(key, docpath)
-            item = self.repo.get(key)
+            else:
+                self.repo.update(key, docpath)
+
+            if not skip:
+                item = self.repo.get(key)
         except Exception, err:
             logger.error(str(err))
-        else:
+            skip = 1
+
+        if not skip:
             if self.db.contains(key):
                 logger.info('already indexed')
             else:

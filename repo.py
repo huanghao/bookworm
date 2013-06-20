@@ -21,10 +21,10 @@ class Repo(object):
     def __init__(self, root):
         self.root = os.path.abspath(root)
 
-    def contains(self, key):
+    def check(self, key):
         if self.is_bad(key):
-            return True
-        return os.path.exists(self.meta_path(key))
+            return -1
+        return 1 if os.path.exists(self.meta_path(key)) else 0
 
     def update(self, key, docpath):
         if self.is_bad(key):
