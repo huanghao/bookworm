@@ -9,7 +9,7 @@ import xapian
 import guess_language
 from repo import Repo
 from fingerprint import Fingerprint
-from mmseg.search import seg_txt_search
+from mmseg.search import seg_txt_search, seg_txt_2_dict
 
 
 logger = logging.getLogger('indexer')
@@ -40,15 +40,17 @@ class DB(object):
         text = item.text
         lang = guess_language.classifier.guess(text[:1024*100])
         logger.debug('lanuage is %s' % lang)
-        if lang != 'english':
-            logger.warn('language %s is not supported' % lang)
-            return
 
         doc = xapian.Document()
         termgenerator = xapian.TermGenerator()
         termgenerator.set_document(doc)
         termgenerator.set_stemmer(xapian.Stem("en"))
-        termgenerator.index_text(text)
+
+        if lang == 'chinese':
+            for word, value in seg_txt_2_dict(text).iteritems():
+                doc.add_term(word, value)
+        else:
+            termgenerator.index_text(text)
 
         for path in item.meta['paths']:
             path = path.encode('utf8') # json.loads return unicode
