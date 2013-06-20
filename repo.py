@@ -22,15 +22,20 @@ class Repo(object):
         self.root = os.path.abspath(root)
 
     def _put_meta(self, key, docpath):
-        self.dump_meta(key, {
+        meta = {
             'key': key,
             'format': get_ext(docpath),
             'size': get_file_size(docpath),
             'paths': {
                 docpath: now(),
                 },
-            'num_pages': get_pdf_num_pages(docpath),
-            })
+            }
+        try:
+            meta['num_pages'] = get_pdf_num_pages(docpath)
+        except Exception, err:
+            logger.error(str(err))
+        self.dump_meta(key, meta)
+
     def _merge_path(self, key, docpath):
         meta = self.load_meta(key)
         # json load string as unicode, in order to compare, change to unicode type first

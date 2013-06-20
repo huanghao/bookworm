@@ -10,9 +10,9 @@
 %if result:
     <ol>
     %for item in result:
-        <li>
+        <li style="float:left; width:300px; height:300px; margin-right:2em;">
         %for link, name in item['paths']:
-            <p><a href="${link}" target="new">${name}</a></p>
+            <a href="${link}" target="new">${name}</a>
             %if item.get('thumb'):
             <div>
               <a href="${item['thumb']}" target="new">
