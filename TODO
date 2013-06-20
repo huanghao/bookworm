@@ -1,10 +1,11 @@
 * split update repo and update index into two stages
 * keep last modify time in repo, rebuild index depends on this time
+* support multi format: chm, doc, text
+* maintain book files in repo
 * fix: pdf2txt may hang forever
 * add setup.py
 * refactor: split item from repo
-* support multi format: chm, doc, text
-* support multi language: chinese
 * add repo checker to find and deal with all malformed books
-* repochk report duplicated files
 * add progress bar when doing pdf2txt
+* find similar/duplicated book by content
+* search online bookstore(amazon,googlebooks,douban,dangdang) for similar cover thumbnail, retrieve the meta information
