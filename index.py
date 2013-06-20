@@ -50,6 +50,10 @@ class DB(object):
         termgenerator.index_text(text)
 
         #TODO: add meta info to data
+        for path in item.meta['paths']:
+            title = '.'.join(os.path.basename(path).split('.')[:-1])
+            termgenerator.index_text(title, 1, 'S')
+
         doc.set_data(json.dumps(item.meta))
 
         idterm = u"Q" + key
@@ -61,9 +65,10 @@ class DB(object):
 
 class Indexer(object):
 
-    def __init__(self, db_path, repo_path):
+    def __init__(self, db_path, repo_path, force_index=False):
         self.db = DB(db_path)
         self.repo = Repo(repo_path)
+        self.force_index = True
 
     def index(self, docpath):
         key = Fingerprint(docpath).hex()
@@ -85,7 +90,7 @@ class Indexer(object):
             skip = 1
 
         if not skip:
-            if self.db.contains(key):
+            if not self.force_index and self.db.contains(key):
                 logger.info('already indexed')
             else:
                 
@@ -102,7 +107,7 @@ def main(args):
         'please use -r to specify a correct repo path' % args.repo_path)
         return 1
 
-    indexer = Indexer(args.db_path, args.repo_path)
+    indexer = Indexer(args.db_path, args.repo_path, force_index=args.force_index)
     if args.pdf:
         indexer.index(args.pdf)
         return 0
@@ -136,6 +141,8 @@ def parse_args():
     parser.add_argument('-f', '--pdf-list-file', type=os.path.abspath,
         help='given a file each line is a pdf path. '
         'This option conflict with the positional argument "pdf"')
+    parser.add_argument('--force-index', action='store_true',
+                        help='force index even if it exists')
     parser.add_argument('-v', '--verbose',
         action='store_true', help='turn on verbose mode')
     return parser.parse_args()
