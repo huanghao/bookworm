@@ -9,6 +9,7 @@ import xapian
 import guess_language
 from repo import Repo
 from fingerprint import Fingerprint
+from mmseg.search import seg_txt_search
 
 
 logger = logging.getLogger('indexer')
@@ -49,10 +50,14 @@ class DB(object):
         termgenerator.set_stemmer(xapian.Stem("en"))
         termgenerator.index_text(text)
 
-        #TODO: add meta info to data
         for path in item.meta['paths']:
-            title = '.'.join(os.path.basename(path).split('.')[:-1])
+            path = path.encode('utf8') # json.loads return unicode
+            basepart = os.path.basename(path).split('.')[:-1]
+            title = '.'.join(basepart)
             termgenerator.index_text(title, 1, 'S')
+            if guess_language.classifier.guess(title) == 'chinese':
+                for word in seg_txt_search(title):
+                    doc.add_term(word)
 
         doc.set_data(json.dumps(item.meta))
 

@@ -23,7 +23,8 @@ class Root(object):
     def index(self, q=''):
         result = []
         if q:
-            for match in search(db_path, q, pagesize=50):
+            querystring = q.encode('utf8') if isinstance(q, unicode) else q
+            for match in search(db_path, querystring, pagesize=30):
                 meta = json.loads(match.document.get_data())
 
                 paths = [ (os.path.join('files', path.split('Documents/')[1]),

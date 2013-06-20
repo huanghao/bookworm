@@ -1,3 +1,5 @@
+* split update repo and update index into two stages
+* keep last modify time in repo, rebuild index depends on this time
 * fix: pdf2txt may hang forever
 * add setup.py
 * refactor: split item from repo

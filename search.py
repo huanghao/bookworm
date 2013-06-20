@@ -6,6 +6,9 @@ import logging
 import argparse
 
 import xapian
+from mmseg.search import seg_txt_search
+
+import guess_language
 
 logger = logging.getLogger(os.path.basename(__file__)[:-3])
 
@@ -13,24 +16,29 @@ def search(dbpath, querystring, offset=0, pagesize=10):
     # offset - defines starting point within result set
     # pagesize - defines number of records to retrieve
 
-    # Open the database we're going to search.
     db = xapian.Database(dbpath)
 
-    # Set up a QueryParser with a stemmer and suitable prefixes
-    queryparser = xapian.QueryParser()
-    queryparser.set_stemmer(xapian.Stem("en"))
-    queryparser.set_stemming_strategy(queryparser.STEM_SOME)
-    queryparser.add_prefix("title", "S")
-    queryparser.add_prefix("description", "XD")
-    queryparser.add_prefix("key", "Q")
+    if guess_language.classifier.guess(querystring) == 'chinese':
+        query_list = []
+        for word in seg_txt_search(querystring):
+            query = xapian.Query(word)
+            query_list.append(query)
+        if len(query_list) != 1:
+            query = xapian.Query(xapian.Query.OP_OR, query_list)
+        else:
+            query = query_list[0]
+        #TODO: also need prefix search support in chinese
+    else:
+        queryparser = xapian.QueryParser()
+        queryparser.set_stemmer(xapian.Stem("en"))
+        queryparser.set_stemming_strategy(queryparser.STEM_SOME)
+        queryparser.add_prefix("title", "S")
+        queryparser.add_prefix("description", "XD")
+        queryparser.add_prefix("key", "Q")
+        query = queryparser.parse_query(querystring)
 
-    # And parse the query
-    query = queryparser.parse_query(querystring)
-
-    # Use an Enquire object on the database to run the query
     enquire = xapian.Enquire(db)
     enquire.set_query(query)
-
     return enquire.get_mset(offset, pagesize)
 
 
