@@ -16,8 +16,8 @@ class Root(object):
 
     @cherrypy.expose
     def index(self, q=''):
+        result = []
         if q:
-            result = []
             for match in search(db_path, q):
                 item = {
                     'rank': match.rank,
@@ -32,4 +32,7 @@ class Root(object):
 
 
 if __name__ == '__main__':
+    cherrypy.config.update({'server.socket_host': '0.0.0.0',
+                            'server.socket_port': 8080,
+                           })
     cherrypy.quickstart(Root())
