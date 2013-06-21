@@ -1,3 +1,4 @@
+* db.contains has false-negative problem
 * title mixed with english and chinese still has problem
 * info in meta should be separated into different parts:
   - basic: md5sum, size

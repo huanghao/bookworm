@@ -8,6 +8,7 @@ class FailedToRead(Exception):
 
 
 def get_pdf_num_pages(path):
+    logger.info('reading pdf meta: %s', docpath)
     try:
         reader = PdfFileReader(open(path, 'rb'))
         return reader.getNumPages()
@@ -16,6 +17,7 @@ def get_pdf_num_pages(path):
 
 
 def get_pdf_text(path):
+    logger.info('reading pdf content: %s', docpath)
     try:
         return subprocess.check_output(['pdf2txt.py', path])
     except Exception as err:

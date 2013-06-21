@@ -62,7 +62,6 @@ class Repo(object):
             mkdir_p(itempath)
             changed += 1
         
-        logger.info('reading pdf: %s' % docpath)
         try:
             if not os.path.exists(self.meta_path(key)):
                 self._put_meta(key, docpath)

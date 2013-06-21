@@ -26,6 +26,7 @@ class Root(object):
             querystring = q.encode('utf8') if isinstance(q, unicode) else q
             for match in search(db_path, querystring, pagesize=30):
                 meta = json.loads(match.document.get_data())
+                key = meta['key']
 
                 #FIXME: hardcode here
                 paths = [ (os.path.join('files', path.split('Documents/ebook/')[1]),
@@ -36,9 +37,10 @@ class Root(object):
                     'rank': match.rank,
                     'docid': match.docid,
                     'paths': paths,
+                    'key': key,
                     }
 
-                thumbpath = os.path.join(key_to_path(meta['key']), 'thumb.png')
+                thumbpath = os.path.join(key_to_path(key), 'thumb.png')
                 if os.path.exists(os.path.join(repo_path, thumbpath)):
                     item['thumb'] = os.path.join('repo', thumbpath)
 
