@@ -39,16 +39,15 @@
 }
 </style>
 
-<h1>Search ebook</h1>
-
 <form method='GET' class="search_form">
-    <input type='text' name='q' value="${q}" size="22" maxlength="60" class="search_input" />
+    <input type='text' name='q' value="${q}" size="22" maxlength="60" class="search_input" autofocus="autofocus"/>
     <input type='submit' value='Search' class="search_button" />
 </form>
 
+%if q:
 %if result:
     <ol>
-    %for item in result:
+        %for item in result:
         <li class="book">
         %for link, name in item['paths']:
             <a href="${link}" target="new">${name}</a>
@@ -65,4 +64,5 @@
     </ol>
 %else:
     <p>Not found</p>
+%endif
 %endif
