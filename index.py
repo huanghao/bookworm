@@ -1,6 +1,7 @@
 import os
 import sys
 import json
+import string
 import logging
 import argparse
 
@@ -52,10 +53,13 @@ class DB(object):
         else:
             termgenerator.index_text(text)
 
+        transtab = string.maketrans(string.punctuation,
+            ' '*len(string.punctuation))
         for path in item.meta['paths']:
             path = path.encode('utf8') # json.loads return unicode
             basepart = os.path.basename(path).split('.')[:-1]
             title = '.'.join(basepart)
+            title = title.translate(transtab)
             termgenerator.index_text(title, 1, 'S')
             if guess_language.classifier.guess(title) == 'chinese':
                 for word in seg_txt_search(title):
