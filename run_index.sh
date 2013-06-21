@@ -7,6 +7,10 @@ if ! /usr/bin/lockfile -r 3 $LOCK_FILENAME; then
     exit 1
 fi
 
+source /home/huanghao/.virtualenvs/bookworm/bin/activate
+
 cd $(dirname $0)
+
 find /home/huanghao/Documents/ebook/ -name '*.pdf' | python index.py -v
+
 rm -f $LOCK_FILENAME
