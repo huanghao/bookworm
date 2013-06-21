@@ -24,7 +24,7 @@ def search(dbpath, querystring, offset=0, pagesize=10):
             query = xapian.Query(word)
             query_list.append(query)
         if len(query_list) != 1:
-            query = xapian.Query(xapian.Query.OP_OR, query_list)
+            query = xapian.Query(xapian.Query.OP_AND, query_list)
         else:
             query = query_list[0]
         #TODO: also need prefix search support in chinese

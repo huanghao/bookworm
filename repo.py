@@ -41,7 +41,6 @@ class Repo(object):
         changed = 0
         # clean up non-exists path
         for path in meta['paths'].keys():
-            print path
             if not os.path.exists(path):
                 meta['paths'].pop(path)
                 changed += 1

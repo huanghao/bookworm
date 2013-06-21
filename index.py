@@ -95,7 +95,7 @@ class Indexer(object):
                 not self.db.contains(key):
                 self.db.put(key, item)
             else:
-                logger.info('already indexed')
+                logger.debug('already indexed:%s', docpath)
 
 
 def main(args):
