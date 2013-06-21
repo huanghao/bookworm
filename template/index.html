@@ -1,22 +1,61 @@
 <title>Search ebook</title>
+<style>
+.book {
+    float:left;
+    width:300px;
+    height:300px;
+    margin-right:2em;
+}
+.search_form {
+    width:40%;
+    margin:2em auto;
+}
+.search_input {
+    font-size: 15px;
+    height:30px;
+    width:80%;
+    margin: 5px 0px 5px 0px;
+    padding: 3px;
+
+    border: 1px solid #999;
+}
+.search_button {
+    font-size: 15px;
+    height:30px;
+    margin: 5px 0px 5px 0px;
+    padding: 0.3em 0.6em;
+
+    border-radius: 3px;
+    border: 1px solid #000!important;
+    background-color: #333;
+    color: #fff;
+    box-shadow: 0 2px 1px rgba(0, 0, 0, 0.3),0 1px 0 rgba(255, 255, 255, 0.4) inset;
+    text-decoration: none;
+}
+.thumb {
+    border: 1px solid gray;
+    height: 200px;
+    margin: 5px 0;
+}
+</style>
 
 <h1>Search ebook</h1>
 
-<form method='GET' style="width:40%; margin:2em auto;">
-    <input type='text' name='q' value="${q}" size="22" maxlength="60" style="height:30px; width:80%;" />
-    <input type='submit' value='Search' style="height:30px;" />
+<form method='GET' class="search_form">
+    <input type='text' name='q' value="${q}" size="22" maxlength="60" class="search_input" />
+    <input type='submit' value='Search' class="search_button" />
 </form>
 
 %if result:
     <ol>
     %for item in result:
-        <li style="float:left; width:300px; height:300px; margin-right:2em;">
+        <li class="book">
         %for link, name in item['paths']:
             <a href="${link}" target="new">${name}</a>
             %if item.get('thumb'):
             <div>
               <a href="${item['thumb']}" target="new">
-                <img src="${item['thumb']}" style="border: 1px solid gray; height:200px;" alt="${item['key']}"/>
+                <img src="${item['thumb']}" class="thumb" alt="${item['key']}"/>
               </a>
             </div>
             %endif
