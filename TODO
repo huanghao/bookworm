@@ -1,3 +1,7 @@
+* info in meta should be separated into different parts:
+  - basic: md5sum, size
+  - changed frequently: filepath and filename
+  - tricky to get: pdf meta
 * split update repo and update index into two stages
 * keep last modify time in repo, rebuild index depends on this time
 * support multi format: chm, doc, text
