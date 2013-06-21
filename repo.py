@@ -86,7 +86,10 @@ class Repo(object):
         def __init__(self, repo, key):
             self.repo = repo
             self.meta = self.repo.load_meta(key)
-            self.text = self.repo.load_text(key)
+            if os.path.exists(self.repo.text_path(key)):
+                self.text = self.repo.load_text(key)
+            else:
+                self.text = ''
 
     def get(self, key):
         return self.Item(self, key)
