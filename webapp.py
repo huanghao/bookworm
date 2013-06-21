@@ -26,17 +26,19 @@ class Root(object):
             querystring = q.encode('utf8') if isinstance(q, unicode) else q
             for match in search(db_path, querystring, pagesize=30):
                 meta = json.loads(match.document.get_data())
-                key = meta['key']
+                if not meta['paths']:
+                    continue
 
+                key = meta['key']
+                path = meta['paths'].keys()[0]
                 #FIXME: hardcode here
-                paths = [ (os.path.join('files', path.split('Documents/ebook/')[1]),
-                           os.path.basename(path))
-                          for path in meta['paths'] ]
+                path = os.path.join('files', path.split('Documents/ebook/')[1])
 
                 item = {
                     'rank': match.rank,
                     'docid': match.docid,
-                    'paths': paths,
+                    'filelink': path,
+                    'title': os.path.basename(path),
                     'key': key,
                     }
 
@@ -47,7 +49,8 @@ class Root(object):
                 result.append(item)
 
         tmpl = lookup.get_template('index.html')
-        data = dict([ (name,locals().get(name)) for name in ('q', 'result') ])
+        data = dict([ (name,locals().get(name))
+            for name in ('q', 'result') ])
         return tmpl.render(**data)
 
 

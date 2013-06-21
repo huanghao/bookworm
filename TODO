@@ -1,3 +1,4 @@
+* check index db and remove non-exists files
 * pdf2txt: content is (cid:4193) (cid:3944)
 * db.contains has false-negative problem
 * title mixed with english and chinese still has problem

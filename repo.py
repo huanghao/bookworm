@@ -38,12 +38,25 @@ class Repo(object):
 
     def _merge_path(self, key, docpath):
         meta = self.load_meta(key)
+        changed = 0
+        # clean up non-exists path
+        for path in meta['paths'].keys():
+            print path
+            if not os.path.exists(path):
+                meta['paths'].pop(path)
+                changed += 1
+                logger.info('clean non-exists path %s', path.encode('utf8'))
+
         # json load string as unicode, in order to compare, change to unicode type first
         upath = docpath if isinstance(docpath, unicode) else docpath.decode('utf8')
         if upath not in meta['paths']:
             meta['paths'][upath] = now()
-            self.dump_meta(meta)
+            changed += 1
             logger.info('append path to repo item %s', key)
+
+        if changed:
+            self.dump_meta(key, meta)
+        return changed
 
     def _put_text(self, key, docpath):
         self.dump_text(key, get_pdf_text(docpath))
@@ -63,7 +76,9 @@ class Repo(object):
             changed += 1
         
         try:
-            if not os.path.exists(self.meta_path(key)):
+            if os.path.exists(self.meta_path(key)):
+                changed += self._merge_path(key, docpath)
+            else:
                 self._put_meta(key, docpath)
                 changed += 1
             if not os.path.exists(self.text_path(key)):

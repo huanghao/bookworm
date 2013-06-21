@@ -90,10 +90,12 @@ class Indexer(object):
         except Exception, err:
             logger.error(str(err))
         else:
-            if not self.force_index and self.db.contains(key):
-                logger.info('already indexed')
-            else:
+            if self.force_index or \
+                changed or \
+                not self.db.contains(key):
                 self.db.put(key, item)
+            else:
+                logger.info('already indexed')
 
 
 def main(args):

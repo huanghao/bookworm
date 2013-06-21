@@ -49,8 +49,7 @@
     <ol>
         %for item in result:
         <li class="book">
-        %for link, name in item['paths']:
-            <a href="${link}" target="new">${name}</a>
+            <a href="${item['filelink']}" target="new">${item['title']}</a>
             %if item.get('thumb'):
             <div>
               <a href="${item['thumb']}" target="new">
@@ -58,7 +57,6 @@
               </a>
             </div>
             %endif
-        %endfor
         </li>
     %endfor
     </ol>
