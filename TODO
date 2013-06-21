@@ -18,3 +18,4 @@
 * find similar/duplicated book by content
 * search online bookstore(amazon,googlebooks,douban,dangdang) for similar cover thumbnail, retrieve the meta information
 * web page text overlap
+* setup ftp for uploading
