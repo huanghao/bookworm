@@ -27,7 +27,8 @@ class Root(object):
             for match in search(db_path, querystring, pagesize=30):
                 meta = json.loads(match.document.get_data())
 
-                paths = [ (os.path.join('files', path.split('Documents/')[1]),
+                #FIXME: hardcode here
+                paths = [ (os.path.join('files', path.split('Documents/ebook/')[1]),
                            os.path.basename(path))
                           for path in meta['paths'] ]
 
