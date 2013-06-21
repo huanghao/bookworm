@@ -78,7 +78,8 @@ class Repo(object):
             self.mark_as_bad(key, str(err))
             raise
 
-        logger.info('save %s -> %s' % (docpath, itempath))
+        if changed:
+            logger.info('update %s -> %s' % (docpath, itempath))
         return changed
 
     class Item(object):

@@ -79,7 +79,7 @@ class Indexer(object):
     def __init__(self, db_path, repo_path, force_index=False):
         self.db = DB(db_path)
         self.repo = Repo(repo_path)
-        self.force_index = True
+        self.force_index = force_index
 
     def index(self, docpath):
         key = Fingerprint(docpath).hex()
