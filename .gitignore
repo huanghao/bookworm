@@ -1,3 +1,4 @@
 db/
 repo/
 log
+cache.sqlite
