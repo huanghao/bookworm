@@ -32,9 +32,21 @@ def search_by_image(filename):
     print 'location:', url
     get_search_result(url)
 
-def get_search_result(url):
+def get_url_host(url):
     parts = urlparse.urlsplit(url)
     host = '%s://%s' % (parts.scheme, parts.netloc)
+    return host
+
+def get_url_hostpath(url):
+    parts = urlparse.urlsplit(url)
+    hostpath = join_url_hostpath(parts.netloc, parts.path)
+    return hostpath
+
+def join_url_hostpath(host, path):
+    return '/'.join([host, path.lstrip('/')])
+
+def get_search_result(url):
+    host = get_url_host(url)
 
     r = urlopen(url)
     open('test.html', 'w').write(r.content)
@@ -49,16 +61,15 @@ def get_search_result(url):
 
     print '-'*40
     parsers = {
-        #'amazon.cn': parse_amazon_cn,
-        #'amazon.com': parse_amazon_cn,
+        'amazon.cn': parse_amazon_cn,
+        'amazon.com': parse_amazon_cn,
         'douban.com/subject/': parse_douban,
         'ishare.iask.sina.com.cn': parse_ishare,
         }
 
     info = {}
     for href in hrefs:
-        parts = urlparse.urlsplit(href)
-        hostpath = os.path.join(parts.netloc, parts.path.lstrip('/'))
+        hostpath = get_url_hostpath(href)
         for site, parser in parsers.iteritems():
             if site not in info and hostpath.find(site) > -1:
                 print 'parsing', href
@@ -73,7 +84,27 @@ def parse_pair(s):
     return [ i.strip() for i in s.replace(u'\uff1a', ':').split(':', 1) ]
 
 def parse_ishare(url):
+    info = {'url': url}
     html = pq(urlopen(url).content)
+
+    # tilte
+    title = html('h1.f14').text()
+    info['title'] = title
+
+    # download url
+    btn = html('.download_btn_box')
+    host = get_url_host(url)
+    download_url = join_url_hostpath(host, btn('a').attr('href'))
+    info['download_url'] = download_url
+    print download_url
+
+    # file size
+    file_size = btn('span').text()
+    info['file_size'] = file_size
+    print file_size
+
+    return info
+
 
 def parse_douban(url):
     info = {'url': url}
