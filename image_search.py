@@ -1,3 +1,4 @@
+import os
 import re
 import sys
 import random
@@ -47,17 +48,19 @@ def get_search_result(url):
         print '* %s: %s' % (link.text, href)
 
     print '-'*40
-    #douban.com|amazon.com|amazon.cn|ishare.iask.sina.com.cn
     parsers = {
-        'amazon.cn': parse_amazon_cn,
-        'amazon.com': parse_amazon_cn,
+        #'amazon.cn': parse_amazon_cn,
+        #'amazon.com': parse_amazon_cn,
+        'douban.com/subject/': parse_douban,
+        'ishare.iask.sina.com.cn': parse_ishare,
         }
 
     info = {}
     for href in hrefs:
-        netloc = urlparse.urlsplit(href).netloc
+        parts = urlparse.urlsplit(href)
+        hostpath = os.path.join(parts.netloc, parts.path.lstrip('/'))
         for site, parser in parsers.iteritems():
-            if site not in info and netloc.find(site) > -1:
+            if site not in info and hostpath.find(site) > -1:
                 print 'parsing', href
                 info[site] = parser(href)
 
@@ -65,12 +68,44 @@ def get_search_result(url):
     pprint(info)
 
 
+def parse_pair(s):
+    # replace chinese colon to english
+    return [ i.strip() for i in s.replace(u'\uff1a', ':').split(':', 1) ]
+
 def parse_ishare(url):
-    html = pg(urlopen(url).content)
+    html = pq(urlopen(url).content)
 
 def parse_douban(url):
-    url = 'http://book.douban.com/subject/3220004/'
+    info = {'url': url}
     html = pq(urlopen(url).content)
+
+    # cover image url
+    mainpic = html('#mainpic')
+    cover_url = mainpic('a').attr('href')
+    info['cover_url'] = cover_url
+    print cover_url
+
+    # title
+    title = mainpic('img').attr('alt')
+    info['title'] = title
+    print title
+
+    # author, publisher, pub year, price, isbn etc.
+    desc = html('#info').html()
+    for each in re.split(r'<br/?>', desc):
+        each = each.strip()
+        if each:
+            k, v = parse_pair(pq(each).text())
+            info[k] = v
+            print u'{} => {}'.format(k, v)
+
+    # tags
+    tags = [ pq(a).text() for a in html('#db-tags-section')('a') ]
+    info['tags'] = tags
+    print ' '.join(tags)
+    
+    return info
+
 
 def parse_amazon_cn(url):
     info = {'url': url}
@@ -101,10 +136,10 @@ def parse_amazon_cn(url):
         li = pq(li)
         if li.is_('#SalesRank'):
             continue
-        kv = pq(li).text()
-        k, v = [ i.strip() for i in kv.replace(u'\uff1a', ':').split(':', 1) ]
+        k, v = parse_pair(pq(li).text())
         info[k] = v
         print u'{} => {}'.format(k, v)
+
     return info
 
     
