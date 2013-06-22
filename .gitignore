@@ -2,3 +2,7 @@ db/
 repo/
 log
 cache.sqlite
+change.new
+change.old
+test.html
+test.url
