@@ -1,10 +1,7 @@
-import os
+import re
 import sys
-import base64
 import random
-import httplib
 import urlparse
-import mimetypes
 
 import requests
 import requests_cache
@@ -12,73 +9,6 @@ requests_cache.install_cache('cache')
 
 from pyquery import PyQuery as pq
 
-
-def post_multipart(host, selector, fields, files):
-    content_type, body = encode_multipart_formdata(fields, files)
-    h = httplib.HTTP(host)
-    h.putrequest('POST', selector)
-    h.putheader('content-type', content_type)
-    h.putheader('content-length', str(len(body)))
-    h.endheaders()
-    h.send(body)
-    errcode, errmsg, headers = h.getreply()
-    return h.file.read()
-
-def encode_multipart_formdata(fields, files):
-    LIMIT = '----------lImIt_of_THE_fIle_eW_$'
-    CRLF = '\r\n'
-    L = []
-    for (key, value) in fields:
-        L.append('--' + LIMIT)
-        L.append('Content-Disposition: form-data; name="%s"' % key)
-        L.append('')
-        L.append(value)
-    for (key, filename, value) in files:
-        L.append('--' + LIMIT)
-        L.append('Content-Disposition: form-data; name="%s"; filename="%s"' % (key, filename))
-        L.append('Content-Type: %s' % get_content_type(filename))
-        L.append('')
-        L.append(value)
-    L.append('--' + LIMIT + '--')
-    L.append('')
-    body = CRLF.join(L)
-    content_type = 'multipart/form-data; boundary=%s' % LIMIT
-    return content_type, body
-
-def get_content_type(filename):
-    return mimetypes.guess_type(filename)[0] or 'application/octet-stream'
-
-
-
-def search_by_image_using_stdlib(filename):
-    #encoded_file_content = base64.encodestring(open(filename).read())
-    encoded_file_content = open(filename).read()
-
-    host = 'images.google.com'
-    selector = '/searchbyimage/upload'
-    fields = [
-        ('image_content', ''),
-        ]
-    files = [
-        ('encoded_image', os.path.basename(filename), encoded_file_content),
-        ]
-
-    content_type, body = encode_multipart_formdata(fields, files)
-    #print content_type, '\n', body[:500], '\n', '-'*40
-    print post_multipart(host, selector, fields, files)
-
-
-def search_by_image(filename):
-    url = 'http://images.google.com/searchbyimage/upload'
-    data = {'image_content': ''}
-    files = {'encoded_image': open(filename, 'rb')}
-    r = requests.post(url, data=data, files=files, allow_redirects=False)
-    url = r.headers.get('location')
-#    print r.headers
-#    print r.history
-#    print r.text
-    print 'location:', url
-    get_best_guess(url)
 
 USER_AGENTS = (
     'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:11.0) Gecko/20100101 Firefox/11.0',
@@ -91,31 +21,96 @@ USER_AGENTS = (
 def urlopen(url):
     return requests.get(url, headers={'User-Agent': random.choice(USER_AGENTS)})
 
-def get_best_guess(url):
+
+def search_by_image(filename):
+    url = 'http://images.google.com/searchbyimage/upload'
+    data = {'image_content': ''}
+    files = {'encoded_image': open(filename, 'rb')}
+    r = requests.post(url, data=data, files=files, allow_redirects=False)
+    url = r.headers.get('location')
+    print 'location:', url
+    get_search_result(url)
+
+def get_search_result(url):
     parts = urlparse.urlsplit(url)
     host = '%s://%s' % (parts.scheme, parts.netloc)
 
     r = urlopen(url)
+    open('test.html', 'w').write(r.content)
     html = pq(r.content)
 
-    def show_links(html):
-        for link in html('.r')('a'):
-            print '* %s: %s' % (link.text, link.attrib['href'])
+    print '-'*40
+    hrefs = []
+    for link in html('.r')('a'):
+        href = link.attrib['href']
+        hrefs.append(href)
+        print '* %s: %s' % (link.text, href)
 
     print '-'*40
-    print 'urls searched by image'
-    show_links(html)
+    #douban.com|amazon.com|amazon.cn|ishare.iask.sina.com.cn
+    parsers = {
+        'amazon.cn': parse_amazon_cn,
+        'amazon.com': parse_amazon_cn,
+        }
 
-    best_guess = html('#topstuff')('div')('a')[-1]
-    url = urlparse.urljoin(host, '%s&%s' % (best_guess.attrib['href'], 'as_sitesearch=amazon.com'))
-    print '-'*40
-    print 'best guess: %s: %s' % (best_guess.text, url)
+    info = {}
+    for href in hrefs:
+        netloc = urlparse.urlsplit(href).netloc
+        for site, parser in parsers.iteritems():
+            if site not in info and netloc.find(site) > -1:
+                print 'parsing', href
+                info[site] = parser(href)
 
-    r = urlopen(url)
-    html = pq(r.content)
-    show_links(html)
+    from pprint import pprint
+    pprint(info)
+
+
+def parse_ishare(url):
+    html = pg(urlopen(url).content)
+
+def parse_douban(url):
+    url = 'http://book.douban.com/subject/3220004/'
+    html = pq(urlopen(url).content)
+
+def parse_amazon_cn(url):
+    info = {'url': url}
+    html = pq(urlopen(url).content)
+
+    # cover image url
+    cover = html('#original-main-image')
+    cover_url = cover.attr('src')
+    info['cover_url'] = cover_url
+    print cover_url
+
+    # title and author
+    title = html('.parseasinTitle')
+    #print title.text()
+    title_and_author = title.parents('.buying').text()
+    info['title_and_author'] = title_and_author
+    print title_and_author
+
+    # price
+    list_price = html('#listPriceValue').text()
+    actual_price = html('#actualPriceValue').text()
+    info['price'] = list_price
+    print list_price
+    print actual_price
+
+    # basic info, such as publisher, lanuage, num of pages, IBSN, etc.
+    for li in html('#SalesRank').parents('ul').children('li'):
+        li = pq(li)
+        if li.is_('#SalesRank'):
+            continue
+        kv = pq(li).text()
+        k, v = [ i.strip() for i in kv.replace(u'\uff1a', ':').split(':', 1) ]
+        info[k] = v
+        print u'{} => {}'.format(k, v)
+    return info
 
     
 if __name__ == '__main__':
+    get_search_result(open('test.url').read().strip())
+    sys.exit(0)
+
     filename = sys.argv[1]
     search_by_image(filename)
