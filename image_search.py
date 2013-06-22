@@ -68,6 +68,9 @@ def get_search_result(url):
         'douban.com/subject/': parse_douban,
         'ishare.iask.sina.com.cn': parse_ishare,
         }
+    #TODO:
+    #itpub.net, iter comments find download
+    #verycd
 
     info = {}
     for href in hrefs:
