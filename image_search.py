@@ -1,4 +1,3 @@
-import os
 import re
 import sys
 import random
@@ -25,11 +24,17 @@ def urlopen(url):
 
 def search_by_image(filename):
     url = 'http://images.google.com/searchbyimage/upload'
+
     data = {'image_content': ''}
     files = {'encoded_image': open(filename, 'rb')}
+
     r = requests.post(url, data=data, files=files, allow_redirects=False)
+
     url = r.headers.get('location')
     print 'location:', url
+    with open('test.url', 'w') as fp:
+        fp.write(url)
+
     get_search_result(url)
 
 def get_url_host(url):
@@ -46,10 +51,7 @@ def join_url_hostpath(host, path):
     return '/'.join([host, path.lstrip('/')])
 
 def get_search_result(url):
-    host = get_url_host(url)
-
     r = urlopen(url)
-    open('test.html', 'w').write(r.content)
     html = pq(r.content)
 
     print '-'*40
@@ -175,8 +177,8 @@ def parse_amazon_cn(url):
 
     
 if __name__ == '__main__':
-    get_search_result(open('test.url').read().strip())
-    sys.exit(0)
-
-    filename = sys.argv[1]
-    search_by_image(filename)
+    if len(sys.argv) > 1:
+        filename = sys.argv[1]
+        search_by_image(filename)
+    else:
+        get_search_result(open('test.url').read().strip())

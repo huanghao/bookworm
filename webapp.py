@@ -1,12 +1,10 @@
 import os
-import sys
 import json
 
 from search import search
 from repo import key_to_path
 
 import cherrypy
-from mako.template import Template
 from mako.lookup import TemplateLookup
 
 db_path = os.path.join(os.path.dirname(__file__), 'db')
