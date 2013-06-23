@@ -6,9 +6,8 @@
 from scrapy.item import Item, Field
 
 
-
-class DoubanBook
-class GrabberItem(Item):
-    # define the fields for your item here like:
-    # name = Field()
-    pass
+class Book(Item):
+    title = Field()
+    cover_link = Field()
+    info = Field()
+    tags = Field()
