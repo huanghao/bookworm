@@ -1,5 +1,7 @@
 import random
+import inspect
 import urlparse
+from pkgutil import iter_modules
 
 import requests
 
@@ -32,3 +34,46 @@ def get_url_hostpath(url):
 def join_url_hostpath(host, path):
     return '/'.join([host, path.lstrip('/')])
 
+def walk_modules(path, load=False):
+    """Loads a module and all its submodules from a the given module path and
+    returns them. If *any* module throws an exception while importing, that
+    exception is thrown back.
+
+    For example: walk_modules('scrapy.utils')
+    """
+
+    mods = []
+    mod = __import__(path, {}, {}, [''])
+    mods.append(mod)
+    if hasattr(mod, '__path__'):
+        for _, subpath, ispkg in iter_modules(mod.__path__):
+            fullpath = path + '.' + subpath
+            if ispkg:
+                mods += walk_modules(fullpath)
+            else:
+                submod = __import__(fullpath, {}, {}, [''])
+                mods.append(submod)
+    return mods
+
+
+def discover_parsers():
+    def iter_parsers():
+        for module in walk_modules('parsers'):
+            for obj in vars(module).itervalues():
+                if inspect.isclass(obj) and \
+                        callable(getattr(obj, 'parse', None)) and \
+                        hasattr(obj, 'pattern'):
+                    yield obj
+
+    parsers = {}
+    for parser_cls in iter_parsers():
+        if isinstance(parser_cls.pattern, list):
+            for p in parser_cls.pattern:
+                parsers[p] = parser_cls()
+        else:
+            parsers[parser_cls.pattern] = parser_cls()
+    #TODO:
+    #itpub.net, iter comments find download
+    #verycd
+    #ebook.jiani.info
+    return parsers
