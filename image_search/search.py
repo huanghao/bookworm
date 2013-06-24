@@ -36,11 +36,11 @@ def get_search_result(url):
     return info
 
 
-def upload_image_and_get_search_link(image_filename):
+def upload_image_and_get_search_link(image):
     url = 'http://images.google.com/searchbyimage/upload'
 
     data = {'image_content': ''}
-    files = {'encoded_image': open(image_filename, 'rb')}
+    files = {'encoded_image': open(image, 'rb')}
     r = requests.post(url, data=data, files=files, allow_redirects=False)
 
     url = r.headers.get('location')
@@ -52,24 +52,26 @@ def main(args):
     if args.debug:
         url = open(args.link_filename).read().strip()
     else:
-        url = upload_image_and_get_search_link(args.image_filename)
+        url = upload_image_and_get_search_link(args.image)
         if not args.not_save_search_link:
             with open(args.link_filename, 'w') as fp:
                 fp.write(url)
 
     result = get_search_result(url)
+
     result_str = json.dumps(result, indent=4)
     logger.info('result: %s', result_str)
 
     if args.output_file:
         with open(args.output_file, 'w') as fp:
             fp.write(result_str)
+        logger.info('result is saved in %s', args.output_file)
 
 
 def parse_args():
     parser = argparse.ArgumentParser(description='''search images.google by
 image file,and get it's meta info from website such as amazon and douban.''')
-    parser.add_argument('image-filename', type=os.path.abspath,
+    parser.add_argument('image', type=os.path.abspath,
                         help='image to search')
     parser.add_argument('-o', '--output-file',
                         help='save info into output file')
