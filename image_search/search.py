@@ -6,7 +6,6 @@ import argparse
 
 import requests
 import requests_cache
-requests_cache.install_cache('cache')
 
 from pyquery import PyQuery as pq
 
@@ -87,6 +86,9 @@ a text file, it can be used in debug mode''')
 
 if __name__ == '__main__':
     args = parse_args()
+
+    if args.debug:
+        requests_cache.install_cache('cache')
 
     level = logging.DEBUG if args.debug else logging.INFO
     logging.basicConfig(level=level, stream=sys.stdout)
