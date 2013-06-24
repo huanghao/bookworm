@@ -1,4 +1,3 @@
-* check index db and remove non-exists files
 * pdf2txt: content is (cid:4193) (cid:3944)
 * db.contains has false-negative problem
 * title mixed with english and chinese still has problem
@@ -6,16 +5,12 @@
   - basic: md5sum, size
   - changed frequently: filepath and filename
   - tricky to get: pdf meta
-* split update repo and update index into two stages
 * keep last modify time in repo, rebuild index depends on this time
 * support multi format: chm, doc, text
 * maintain book files in repo
 * fix: pdf2txt may hang forever
 * add setup.py
 * refactor: split item from repo
-* add repo checker to find and deal with all malformed books
-* add progress bar when doing pdf2txt
 * find similar/duplicated book by content
-* search online bookstore(amazon,googlebooks,douban,dangdang) for similar cover thumbnail, retrieve the meta information
 * web page text overlap
 * setup ftp for uploading
