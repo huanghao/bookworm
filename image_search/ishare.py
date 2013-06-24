@@ -1,6 +1,6 @@
 from pyquery import PyQuery as pq
 
-from .util import urlopen, join_url_hostpath, get_url_host
+from util import urlopen, join_url_hostpath, get_url_host
 
 
 def parse(url):

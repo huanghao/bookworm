@@ -2,7 +2,7 @@ import re
 
 from pyquery import PyQuery as pq
 
-from .util import urlopen, parse_pair
+from util import urlopen, parse_pair
 
 
 def parse(url):

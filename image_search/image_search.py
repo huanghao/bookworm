@@ -1,4 +1,6 @@
+import os
 import sys
+import argpase
 
 import requests
 import requests_cache
@@ -25,7 +27,7 @@ def search_by_image(filename):
     with open('test.url', 'w') as fp:
         fp.write(url)
 
-    #get_search_result(url)
+    get_search_result(url)
 
 
 def get_search_result(url):
@@ -63,7 +65,19 @@ def get_search_result(url):
     pprint(info)
 
     
+
+def parse_args():
+    parser = argparse.ArgumentParser(description='''search images.google by image file,
+and get it's meta info from website such as amazon and douban.''')
+    parser.add_argument('image', type=os.path.abspath,
+        help='image to search')
+    parser.add_argument('-o', '--output-file',
+        help='save info into output file')
+    return parser.parse_args()
+
+
 if __name__ == '__main__':
+    args = parse_args()
     if len(sys.argv) > 1:
         filename = sys.argv[1]
         search_by_image(filename)
