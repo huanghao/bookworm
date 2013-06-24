@@ -94,7 +94,7 @@ if __name__ == '__main__':
     parsers = discover_parsers()
     if not parsers:
         logger.error('Can\'t find any parser')
-        sys.exit(0)
+        sys.exit(1)
 
     sys.exit(main(args))
         
