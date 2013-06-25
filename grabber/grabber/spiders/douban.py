@@ -46,7 +46,7 @@ class DoubanWish(BaseSpider):
 
         # next page
         for href in hxs.select('//span[contains(@class, "next")]/a/@href').extract():
-           yield Request(href, callback=self.parse)
+            yield Request(href, callback=self.parse)
 
     def parse_subject(self, response):
         hxs = HtmlXPathSelector(response)
