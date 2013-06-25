@@ -14,3 +14,4 @@
 * find similar/duplicated book by content
 * web page text overlap
 * setup ftp for uploading
+* check duplicated files(if fingerprint is the same, need check content md5)
