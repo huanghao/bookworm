@@ -12,6 +12,8 @@ from repo import Repo
 from fingerprint import Fingerprint
 from mmseg.search import seg_txt_search, seg_txt_2_dict
 
+from search import guess_keywords
+
 
 logger = logging.getLogger('indexer')
 
@@ -53,19 +55,21 @@ class DB(object):
         else:
             termgenerator.index_text(text)
 
-        transtab = string.maketrans(string.punctuation,
-            ' '*len(string.punctuation))
         for path in item.meta['paths']:
             path = path.encode('utf8') # json.loads return unicode
+            logger.debug('index title path: %s', path)
             basepart = os.path.basename(path).split('.')[:-1]
             title = '.'.join(basepart)
-            title = title.translate(transtab)
-            termgenerator.index_text(title, 1, 'S')
-            if guess_language.classifier.guess(title) == 'chinese':
-                logger.debug('title lanuage is chinese')
-                for word in seg_txt_search(title):
+
+            contains_chinese, words = guess_keywords(title)
+            if contains_chinese:
+                logger.debug('title contains chinese')
+                for word in words:
                     doc.add_term(word)
-                    doc.add_term('S'+word)
+                    doc.add_term('S' + word)
+                    logger.debug('index title word: %s', word)
+            else:
+                termgenerator.index_text(title, 1, 'S')
 
         doc.set_data(json.dumps(item.meta))
 

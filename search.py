@@ -8,47 +8,55 @@ import argparse
 import xapian
 from mmseg.search import seg_txt_search
 
-import guess_language
-
 logger = logging.getLogger(os.path.basename(__file__)[:-3])
+
+
+def guess_keywords(querystring, known_prefix=None):
+    stem = xapian.Stem('en')
+    words = []
+    contains_chinese = 0
+    for piece in querystring.split():
+        prefix = None
+        if known_prefix and ':' in piece:
+            qprefix, other = piece.split(':', 1)
+            if qprefix in known_prefix:
+                prefix = known_prefix[qprefix]
+                piece = other
+
+        for word in seg_txt_search(piece):
+            if ord(word[0]) <= 127: # english
+                word = stem(word)
+            else:
+                contains_chinese = 1
+            if prefix:
+                words.append(prefix + word)
+            else:
+                words.append(word)
+
+    return contains_chinese, words
+
 
 def search(dbpath, querystring, offset=0, pagesize=10):
     # offset - defines starting point within result set
     # pagesize - defines number of records to retrieve
+    
+    db = xapian.Database(dbpath)
+
     known_prefix = {
         'title': 'S',
         'description': 'XD',
         'key': 'Q',
         }
+    contains_chinese, words = guess_keywords(querystring, known_prefix)
+    logger.debug('contains chinese: %d', contains_chinese)
+    logger.debug('words: %s', '\n'.join(words))
 
-    db = xapian.Database(dbpath)
-
-    if guess_language.classifier.guess(querystring) == 'chinese':
-        #TODO: also need prefix search support in chinese
-        query_list = []
-        for piece in querystring.split():
-            if ':' in piece:
-                prefix, other = piece.split(':', 1)
-                for word in seg_txt_search(other):
-                    query_list.append(xapian.Query(known_prefix[prefix] + word))
-            else:
-                for word in seg_txt_search(piece):
-                    query_list.append(xapian.Query(word))
-
-        '''
-        for word in seg_txt_search(querystring):
-            if ':' in word:
-                prefix, other = word.split(':', 1)
-                if prefix in known_prefix:
-                    word = known_prefix[prefix] + other
-            print '#', word
-            query = xapian.Query(word)
-            query_list.append(query)
-        '''
-        if len(query_list) != 1:
-            query = xapian.Query(xapian.Query.OP_AND, query_list)
+    if contains_chinese:
+        if len(words) == 1:
+            query = xapian.Query(words[0])
         else:
-            query = query_list[0]
+            query = xapian.Query(xapian.Query.OP_AND,
+                [ xapian.Query(w) for w in words ])
     else:
         queryparser = xapian.QueryParser()
         queryparser.set_stemmer(xapian.Stem("en"))
