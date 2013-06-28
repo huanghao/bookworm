@@ -1,6 +1,6 @@
 from pyquery import PyQuery as pq
 
-from image_search.util import urlopen, parse_pair
+from bookworm.image_search.util import urlopen, parse_pair
 
 
 class AmazonCom(object):

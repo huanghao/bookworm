@@ -9,7 +9,7 @@ import requests_cache
 
 from pyquery import PyQuery as pq
 
-from image_search.util import urlopen, get_url_hostpath, discover_parsers
+from bookworm.image_search.util import urlopen, get_url_hostpath, discover_parsers
 
 logger = logging.getLogger(os.path.basename(__file__)[:-3])
 

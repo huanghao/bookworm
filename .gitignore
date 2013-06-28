@@ -6,3 +6,7 @@ change.new
 change.old
 test.html
 test.url
+
+bookworm.egg-info/
+distribute-0.6.45-py2.7.egg
+distribute-0.6.45.tar.gz

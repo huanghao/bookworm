@@ -6,7 +6,6 @@
 * support multi format: chm, doc, text
 * maintain book files in repo
 * fix: pdf2txt may hang forever
-* add setup.py
 * refactor: split item from repo
 * find similar/duplicated book by content
 * web page text overlap

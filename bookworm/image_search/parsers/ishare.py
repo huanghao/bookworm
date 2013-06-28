@@ -1,6 +1,6 @@
 from pyquery import PyQuery as pq
 
-from image_search.util import urlopen, join_url_hostpath, get_url_host
+from bookworm.image_search.util import urlopen, join_url_hostpath, get_url_host
 
 
 class Ishare(object):
