@@ -113,3 +113,14 @@ class Repo(object):
 
         return changed
 
+    def walk(self):
+        def listdir(path):
+            for name in os.listdir(path):
+                yield name, os.path.join(path, name)
+
+        for name1, dir1 in listdir(self.root):
+            for name2, dir2 in listdir(dir1):
+                for name3, dir3 in listdir(dir2):
+                    for name4, itempath in listdir(dir3):
+                        key = ''.join([name1, name2, name3, name4])
+                        yield key, itempath

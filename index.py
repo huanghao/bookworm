@@ -10,7 +10,7 @@ import xapian
 import guess_language
 from mmseg.search import seg_txt_search, seg_txt_2_dict
 
-from repo import key_to_path
+from repo import Repo, key_to_path
 from search import guess_keywords
 from util import cd
 
@@ -105,18 +105,6 @@ class DB(object):
         self.put(key, itempath)
 
 
-def walk_repo(repo_path):
-    def listdir(path):
-        for name in os.listdir(path):
-            yield name, os.path.join(path, name)
-
-    for name1, dir1 in listdir(repo_path):
-        for name2, dir2 in listdir(dir1):
-            for name3, dir3 in listdir(dir2):
-                for name4, itempath in listdir(dir3):
-                    key = ''.join([name1, name2, name3, name4])
-                    yield key, itempath
-
 
 def main(args):
     if not os.path.isdir(args.db_path):
@@ -134,7 +122,7 @@ def main(args):
             itempath = os.path.join(args.repo_path, key_to_path(key))
             db.index(key, itempath, args.force_index)
     else:
-        for key, itempath in walk_repo(args.repo_path):
+        for key, itempath in Repo(args.repo_path).walk():
             db.index(key, itempath, args.force_index)
 
 
