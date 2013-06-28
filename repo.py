@@ -18,7 +18,7 @@ def now():
 
 
 def key_to_path(key):
-    return os.path.join(key[:2], key[2:4], key[4:6], key[6:])
+    return os.path.join(key[:2], key[2:])
 
 
 class Repo(object):
@@ -119,8 +119,16 @@ class Repo(object):
                 yield name, os.path.join(path, name)
 
         for name1, dir1 in listdir(self.root):
-            for name2, dir2 in listdir(dir1):
-                for name3, dir3 in listdir(dir2):
-                    for name4, itempath in listdir(dir3):
-                        key = ''.join([name1, name2, name3, name4])
-                        yield key, itempath
+            for name2, itempath in listdir(dir1):
+                key = ''.join([name1, name2])
+                yield key, itempath
+
+
+if __name__ == '__main__':
+    print 'mkdir repo2'
+    for i in range(256):
+        print 'mkdir repo2/%02x' % i
+
+    for key, itempath in Repo('repo').walk():
+        newpath = os.path.join('repo2', key[:2], key[2:])
+        print 'mv', itempath, newpath
