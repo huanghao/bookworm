@@ -58,7 +58,7 @@ def walk_modules(path, load=False):
 
 def discover_parsers():
     def iter_parsers():
-        for module in walk_modules('parsers'):
+        for module in walk_modules('image_search.parsers'):
             for obj in vars(module).itervalues():
                 if inspect.isclass(obj) and \
                         callable(getattr(obj, 'parse', None)) and \

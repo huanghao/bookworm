@@ -1,18 +1,18 @@
 import os
 import sys
 import json
-import string
+import time
 import logging
 import argparse
 
 import xapian
 
 import guess_language
-from repo import Repo
-from fingerprint import Fingerprint
 from mmseg.search import seg_txt_search, seg_txt_2_dict
 
+from repo import key_to_path
 from search import guess_keywords
+from util import cd
 
 
 logger = logging.getLogger('indexer')
@@ -24,38 +24,39 @@ class DB(object):
         self.root = root
         self.db = xapian.WritableDatabase(self.root, xapian.DB_CREATE_OR_OPEN)
 
-    def contains(self, key):
-        queryparser = xapian.QueryParser()
-        queryparser.set_stemmer(xapian.Stem("en"))
-        queryparser.set_stemming_strategy(queryparser.STEM_SOME)
-        queryparser.add_prefix("key", "Q")
-
-        querystring = "key:%s" % key
-        query = queryparser.parse_query(querystring)
+    def get_index_time(self, key):
+        query = xapian.Query('Q{}'.format(key))
 
         enquire = xapian.Enquire(self.db)
         enquire.set_query(query)
 
         mset = enquire.get_mset(0, 1)
-        return len(mset) > 0
+        if len(mset) > 0:
+            data = json.loads(mset[0].document.get_data())
+            return data['lastindex']
 
-    def put(self, key, item):
-        text = item.text
-        lang = guess_language.classifier.guess(text[:1024*100])
-        logger.debug('lanuage is %s' % lang)
-
+    def put(self, key, itempath):
         doc = xapian.Document()
         termgenerator = xapian.TermGenerator()
         termgenerator.set_document(doc)
         termgenerator.set_stemmer(xapian.Stem("en"))
 
-        if lang == 'chinese':
-            for word, value in seg_txt_2_dict(text).iteritems():
-                doc.add_term(word, value)
-        else:
-            termgenerator.index_text(text)
+        with cd(itempath):
+            info = json.load(open('info'))
+            self._index_info(info, doc, termgenerator)
+            self._index_text(doc, termgenerator)
 
-        for path in item.meta['paths']:
+        info['lastindex'] = int(time.time())
+        doc.set_data(json.dumps(info))
+
+        idterm = u"Q" + key
+        doc.add_boolean_term(idterm)
+        self.db.replace_document(idterm, doc)
+        self.db.commit()
+        logger.info('index had made %s', idterm)
+
+    def _index_info(self, info, doc, termgenerator):
+        for path in info['paths']:
             path = path.encode('utf8') # json.loads return unicode
             logger.debug('index title path: %s', path)
             basepart = os.path.basename(path).split('.')[:-1]
@@ -71,37 +72,50 @@ class DB(object):
             else:
                 termgenerator.index_text(title, 1, 'S')
 
-        doc.set_data(json.dumps(item.meta))
-
-        idterm = u"Q" + key
-        doc.add_boolean_term(idterm)
-        self.db.replace_document(idterm, doc)
-        self.db.commit()
-        logger.info('index had made %s', idterm)
-
-
-class Indexer(object):
-
-    def __init__(self, db_path, repo_path, force_index=False):
-        self.db = DB(db_path)
-        self.repo = Repo(repo_path)
-        self.force_index = force_index
-
-    def index(self, docpath):
-        key = Fingerprint(docpath).hex()
-
+    def _index_text(self, doc, termgenerator):
         try:
-            changed = self.repo.put(key, docpath)
-            item = self.repo.get(key)
-        except Exception, err:
+            text = open('text').read()
+        except IOError as err:
             logger.error(str(err))
+            return
+
+        lang = guess_language.classifier.guess(text[:1024*100])
+        logger.debug('lanuage is %s' % lang)
+
+        if lang == 'chinese':
+            for word, value in seg_txt_2_dict(text).iteritems():
+                doc.add_term(word, value)
         else:
-            if self.force_index or \
-                changed or \
-                not self.db.contains(key):
-                self.db.put(key, item)
-            else:
-                logger.debug('already indexed:%s', docpath)
+            termgenerator.index_text(text)
+
+    def index(self, key, itempath, force=False):
+        filename = os.path.join(itempath, 'lastchange')
+        try:
+            lastchange = int(open(filename).read())
+        except IOError as err:
+            logger.error(str(err))
+            return
+
+        if not force:
+            lastindex = self.get_index_time(key)
+            if lastindex >= lastchange:
+                logger.debug('lastindex(%s) >= lastchange(%s)',
+                             lastindex, lastchange)
+                return
+        self.put(key, itempath)
+
+
+def walk_repo(repo_path):
+    def listdir(path):
+        for name in os.listdir(path):
+            yield name, os.path.join(path, name)
+
+    for name1, dir1 in listdir(repo_path):
+        for name2, dir2 in listdir(dir1):
+            for name3, dir3 in listdir(dir2):
+                for name4, itempath in listdir(dir3):
+                    key = ''.join([name1, name2, name3, name4])
+                    yield key, itempath
 
 
 def main(args):
@@ -114,26 +128,14 @@ def main(args):
         'please use -r to specify a correct repo path' % args.repo_path)
         return 1
 
-    indexer = Indexer(args.db_path, args.repo_path, force_index=args.force_index)
-    if args.pdf:
-        for pdf in args.pdf:
-            indexer.index(pdf)
-        return 0
-
-    input_ = None
-    if args.pdf_list_file:
-        input_ = open(args.pdf_list_file)
-    elif not sys.stdin.isatty():
-        input_ = sys.stdin
-
-    if not input_:
-        logger.error("can't find any input, please give a pdf file"
-        " or use -f to give a list of pdf file")
-        return 2
-
-    for line in input_:
-        if not line.startswith('#'):
-            indexer.index(line.strip())
+    db = DB(args.db_path)
+    if args.keys:
+        for key in args.keys:
+            itempath = os.path.join(args.repo_path, key_to_path(key))
+            db.index(key, itempath, args.force_index)
+    else:
+        for key, itempath in walk_repo(args.repo_path):
+            db.index(key, itempath, args.force_index)
 
 
 def parse_args():
@@ -141,15 +143,12 @@ def parse_args():
     If there are queue files in root path of repo, it will only deal with those
     queue files. Otherwise it could walk through the whole repo to index them
     all.''')
-    parser.add_argument('pdf', nargs='*', help='pdf path to index')
+    parser.add_argument('keys', nargs='*', help='key to index')
     parser.add_argument('-d', '--db-path', default='db',
         help='xapian db root path')
     parser.add_argument('-r', '--repo-path', default='repo',
         help='ebook repo root path')
-    parser.add_argument('-f', '--pdf-list-file', type=os.path.abspath,
-        help='given a file each line is a pdf path. '
-        'This option conflict with the positional argument "pdf"')
-    parser.add_argument('--force-index', action='store_true',
+    parser.add_argument('-f', '--force-index', action='store_true',
                         help='force index even if it exists')
     parser.add_argument('-v', '--verbose',
         action='store_true', help='turn on verbose mode')

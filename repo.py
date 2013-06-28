@@ -1,10 +1,13 @@
 import os
 import json
+import time
 import logging
 import datetime
 
-from util import mkdir_p, get_ext, get_file_size
-from reader import get_pdf_num_pages, get_pdf_text, FailedToRead, make_thumbnail
+from util import mkdir_p, get_ext, get_file_size, cd
+from reader import get_pdf_text, make_thumbnail
+from fingerprint import Fingerprint
+from image_search.search import main as image_search
 
 
 logger = logging.getLogger('repo')
@@ -13,136 +16,100 @@ logger = logging.getLogger('repo')
 def now():
     return datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
 
+
 def key_to_path(key):
     return os.path.join(key[:2], key[2:4], key[4:6], key[6:])
+
 
 class Repo(object):
 
     def __init__(self, root):
         self.root = os.path.abspath(root)
 
-    def _put_meta(self, key, docpath):
-        meta = {
-            'key': key,
-            'format': get_ext(docpath),
-            'size': get_file_size(docpath),
-            'paths': {
-                docpath: now(),
-                },
-            }
-        try:
-            meta['num_pages'] = get_pdf_num_pages(docpath)
-        except Exception, err:
-            logger.error(str(err))
-        self.dump_meta(key, meta)
+    def _generate_text(self, key, docpath):
+        text = get_pdf_text(docpath)
+        with open('text', 'w') as fp:
+            fp.write(text)
 
-    def _merge_path(self, key, docpath):
-        meta = self.load_meta(key)
+    def _generate_thumb_png(self, key, docpath):
+        make_thumbnail(docpath, 'thumb.png')
+
+    def _update_info(self, key, docpath):
+        if os.path.exists('info'):
+            info = json.load(open('info'))
+            if not self._merge_path(docpath, info):
+                return 0
+        else:
+            info = {
+                'key': key,
+                'format': get_ext(docpath),
+                'size': get_file_size(docpath),
+                'paths': {
+                    docpath: now(),
+                    },
+                }
+        with open('info', 'w') as fp:
+            json.dump(info, fp)
+        return 1
+
+    def _merge_path(self, docpath, info):
         changed = 0
         # clean up non-exists path
-        for path in meta['paths'].keys():
+        for path in info['paths'].keys():
             if not os.path.exists(path):
-                meta['paths'].pop(path)
+                info['paths'].pop(path)
                 changed += 1
                 logger.info('clean non-exists path %s', path.encode('utf8'))
 
         # json load string as unicode, in order to compare, change to unicode type first
         upath = docpath if isinstance(docpath, unicode) else docpath.decode('utf8')
-        if upath not in meta['paths']:
-            meta['paths'][upath] = now()
+        if upath not in info['paths']:
+            info['paths'][upath] = now()
             changed += 1
-            logger.info('append path to repo item %s', key)
-
-        if changed:
-            self.dump_meta(key, meta)
         return changed
 
-    def _put_text(self, key, docpath):
-        self.dump_text(key, get_pdf_text(docpath))
+    def _generate_meta(self, key, docpath):
+        if os.path.exists('thumb.png'):
+            image_search('thumb.png', 'meta')
 
-    def _put_thumbnail(self, key, docpath):
-        make_thumbnail(docpath, self.thumb_path(key))
+    def _generate_field(self, field, key, docpath):
+        err_filename = '{}.err'.format(field)
+        if os.path.exists(err_filename) or os.path.exists(field):
+            return
 
-    def put(self, key, docpath):
-        changed = 0
-        if self.is_bad(key):
-            return changed
+        method = getattr(self, '_generate_{}'\
+                         .format(field.replace('.', '_')))
+        try:
+            method(key, docpath)
+        except Exception as err:
+            with open(err_filename, 'w') as fp:
+                fp.write(str(err))
+            logger.error('error occurs when generate %s for %s: %s',
+                         field, key, err)
+        else:
+            return True
 
+    def put(self, docpath):
+        key = Fingerprint(docpath).hex()
         docpath = os.path.abspath(docpath)
-        itempath = self.key_to_path(key)
+
+        changed = 0
+        itempath = os.path.join(self.root, key_to_path(key))
+
         if not os.path.exists(itempath):
             mkdir_p(itempath)
             changed += 1
-        
-        try:
-            if os.path.exists(self.meta_path(key)):
-                changed += self._merge_path(key, docpath)
-            else:
-                self._put_meta(key, docpath)
-                changed += 1
-            if not os.path.exists(self.text_path(key)):
-                self._put_text(key, docpath)
-                changed += 1
-            if not os.path.exists(self.thumb_path(key)):
-                self._put_thumbnail(key, docpath)
-                changed += 1
-        except FailedToRead as err:
-            logger.error(err)
-            self.mark_as_bad(key, str(err))
-            raise
 
-        if changed:
-            logger.info('update %s -> %s' % (docpath, itempath))
+        with cd(itempath):
+            changed += self._update_info(key, docpath)
+            for field in ('text', 'thumb.png'):
+                if self._generate_field(field, key, docpath):
+                    changed += 1
+
+            if changed:
+                with open('lastchange', 'w') as fp:
+                    fp.write(str(int(time.time())))
+                logger.debug('%s: %s -> %s', key, docpath, itempath)
+
         return changed
 
-    class Item(object):
-
-        def __init__(self, repo, key):
-            self.repo = repo
-            self.meta = self.repo.load_meta(key)
-            if os.path.exists(self.repo.text_path(key)):
-                self.text = self.repo.load_text(key)
-            else:
-                self.text = ''
-
-    def get(self, key):
-        return self.Item(self, key)
-
-    #-----------------------------------
-    def key_to_path(self, key):
-        return os.path.join(self.root, key_to_path(key))
-
-    def meta_path(self, key):
-        return os.path.join(self.key_to_path(key), 'meta')
-
-    def text_path(self, key):
-        return os.path.join(self.key_to_path(key), 'text')
-
-    def bad_path(self, key):
-        return os.path.join(self.key_to_path(key), 'bad')
-
-    def thumb_path(self, key):
-        return os.path.join(self.key_to_path(key), 'thumb.png')
-
-    #-----------------------------------
-    def load_meta(self, key):
-        return json.load(open(self.meta_path(key)))
-
-    def dump_meta(self, key, data):
-        with open(self.meta_path(key), 'w') as fp:
-            return json.dump(data, fp)
-
-    def load_text(self, key):
-        return open(self.text_path(key)).read()
-
-    def dump_text(self, key, data):
-        with open(self.text_path(key), 'w') as fp:
-            fp.write(data)
-
-    def mark_as_bad(self, key, reason):
-        path = os.path.join(self.key_to_path(key), 'bad')
-        with open(path, 'w') as fp:
-            fp.write(reason+'\n')
-
-    def is_bad(self, key):
-        return os.path.exists(self.bad_path(key))

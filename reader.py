@@ -21,14 +21,8 @@ def get_pdf_num_pages(path):
 
 def get_pdf_text(path):
     logger.info('reading pdf content: %s', path)
-    try:
-        return subprocess.check_output(['pdf2txt.py', path])
-    except Exception as err:
-        raise FailedToRead('failed to get pdf content:%s:%s' % (err, path))
+    return subprocess.check_output(['pdf2txt.py', path])
 
 
 def make_thumbnail(pdfpath, thumbpath):
-    try:
-        return subprocess.check_output(['convert', '%s[0]' % pdfpath, thumbpath])
-    except Exception as err:
-        raise FailedToRead('failed to make thumbnail:%s' % pdfpath)
+    return subprocess.check_output(['convert', '%s[0]' % pdfpath, thumbpath])

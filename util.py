@@ -1,4 +1,16 @@
 import os
+from contextlib import contextmanager
+
+
+@contextmanager
+def cd(path):
+    ''' Context manager which will switch CWD to the given path, and get back
+    when operation is done '''
+
+    oldpath = os.getcwd()
+    os.chdir(path)
+    yield
+    os.chdir(oldpath)
 
 
 def mkdir_p(path):

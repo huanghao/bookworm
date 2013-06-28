@@ -34,7 +34,7 @@ def replace_chinese_punctuations_to_english(s):
     pass
 
 # re.M is required, \n can be included in file name
-UNUSUAL = re.compile(r'["$%/;=@`\*\<\>\?\\\^\{\|\}\s]+', re.M)
+UNUSUAL = re.compile(r'[:"$%/;=@`\*\<\>\?\\\^\{\|\}\s]+', re.M)
 def replace_unusual_chars_to_a_single_dot(s):
     return UNUSUAL.sub('.', s)
 

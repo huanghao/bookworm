@@ -9,9 +9,11 @@ import requests_cache
 
 from pyquery import PyQuery as pq
 
-from util import urlopen, get_url_hostpath, discover_parsers
+from image_search.util import urlopen, get_url_hostpath, discover_parsers
 
 logger = logging.getLogger(os.path.basename(__file__)[:-3])
+
+parsers = discover_parsers()
 
 
 def get_search_result(url):
@@ -47,24 +49,18 @@ def upload_image_and_get_search_link(image):
     return url
 
 
-def main(args):
-    if args.debug:
-        url = open(args.link_filename).read().strip()
-    else:
-        url = upload_image_and_get_search_link(args.image)
-        if not args.not_save_search_link:
-            with open(args.link_filename, 'w') as fp:
-                fp.write(url)
+def main(image_filename, output_filename=None):
+    url = upload_image_and_get_search_link(image_filename)
 
     result = get_search_result(url)
 
     result_str = json.dumps(result, indent=4)
     logger.info('result: %s', result_str)
 
-    if args.output_file:
-        with open(args.output_file, 'w') as fp:
+    if output_filename:
+        with open(output_filename, 'w') as fp:
             fp.write(result_str)
-        logger.info('result is saved in %s', args.output_file)
+        logger.info('result is saved in %s', output_filename)
 
 
 def parse_args():
@@ -93,10 +89,9 @@ if __name__ == '__main__':
     level = logging.DEBUG if args.debug else logging.INFO
     logging.basicConfig(level=level, stream=sys.stdout)
 
-    parsers = discover_parsers()
     if not parsers:
         logger.error('Can\'t find any parser')
         sys.exit(1)
 
-    sys.exit(main(args))
-        
+    sys.exit(main(args.image, args.output_file))
+

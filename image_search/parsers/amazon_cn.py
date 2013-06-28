@@ -1,7 +1,7 @@
 #coding: utf8
 from pyquery import PyQuery as pq
 
-from util import urlopen, parse_pair
+from image_search.util import urlopen, parse_pair
 
 
 class AmazonCn(object):
