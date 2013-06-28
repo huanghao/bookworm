@@ -13,3 +13,4 @@
 * check duplicated files(if fingerprint is the same, need check content md5)
 * pagination
 * show search info. example: About 2,760,000,000 results (0.22 seconds)
+* rearrange code to split lib and scripts
