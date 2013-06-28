@@ -1,2 +1,2 @@
-*/30 8-20 * 1-5 * /home/huanghao/workspace/bookworm/run_index.sh >/tmp/bookworm.indexer.log 2>&1
-
+# m h  dom mon dow   command
+41 8-20 * * 1-5 /home/huanghao/workspace/mine/bookworm/run_index.sh >/tmp/bookworm.indexer.log 2>&1

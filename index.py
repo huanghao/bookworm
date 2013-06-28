@@ -62,8 +62,10 @@ class DB(object):
             title = title.translate(transtab)
             termgenerator.index_text(title, 1, 'S')
             if guess_language.classifier.guess(title) == 'chinese':
+                logger.debug('title lanuage is chinese')
                 for word in seg_txt_search(title):
                     doc.add_term(word)
+                    doc.add_term('S'+word)
 
         doc.set_data(json.dumps(item.meta))
 
@@ -110,7 +112,8 @@ def main(args):
 
     indexer = Indexer(args.db_path, args.repo_path, force_index=args.force_index)
     if args.pdf:
-        indexer.index(args.pdf)
+        for pdf in args.pdf:
+            indexer.index(pdf)
         return 0
 
     input_ = None
@@ -134,7 +137,7 @@ def parse_args():
     If there are queue files in root path of repo, it will only deal with those
     queue files. Otherwise it could walk through the whole repo to index them
     all.''')
-    parser.add_argument('pdf', nargs='?', help='pdf path to index')
+    parser.add_argument('pdf', nargs='*', help='pdf path to index')
     parser.add_argument('-d', '--db-path', default='db',
         help='xapian db root path')
     parser.add_argument('-r', '--repo-path', default='repo',

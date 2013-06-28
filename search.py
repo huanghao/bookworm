@@ -15,26 +15,46 @@ logger = logging.getLogger(os.path.basename(__file__)[:-3])
 def search(dbpath, querystring, offset=0, pagesize=10):
     # offset - defines starting point within result set
     # pagesize - defines number of records to retrieve
+    known_prefix = {
+        'title': 'S',
+        'description': 'XD',
+        'key': 'Q',
+        }
 
     db = xapian.Database(dbpath)
 
     if guess_language.classifier.guess(querystring) == 'chinese':
+        #TODO: also need prefix search support in chinese
         query_list = []
+        for piece in querystring.split():
+            if ':' in piece:
+                prefix, other = piece.split(':', 1)
+                for word in seg_txt_search(other):
+                    query_list.append(xapian.Query(known_prefix[prefix] + word))
+            else:
+                for word in seg_txt_search(piece):
+                    query_list.append(xapian.Query(word))
+
+        '''
         for word in seg_txt_search(querystring):
+            if ':' in word:
+                prefix, other = word.split(':', 1)
+                if prefix in known_prefix:
+                    word = known_prefix[prefix] + other
+            print '#', word
             query = xapian.Query(word)
             query_list.append(query)
+        '''
         if len(query_list) != 1:
             query = xapian.Query(xapian.Query.OP_AND, query_list)
         else:
             query = query_list[0]
-        #TODO: also need prefix search support in chinese
     else:
         queryparser = xapian.QueryParser()
         queryparser.set_stemmer(xapian.Stem("en"))
         queryparser.set_stemming_strategy(queryparser.STEM_SOME)
-        queryparser.add_prefix("title", "S")
-        queryparser.add_prefix("description", "XD")
-        queryparser.add_prefix("key", "Q")
+        for k, v in known_prefix.iteritems():
+            queryparser.add_prefix(k, v)
         query = queryparser.parse_query(querystring)
 
     enquire = xapian.Enquire(db)

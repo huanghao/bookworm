@@ -1,6 +1,5 @@
 * pdf2txt: content is (cid:4193) (cid:3944)
 * db.contains has false-negative problem
-* title mixed with english and chinese still has problem
 * info in meta should be separated into different parts:
   - basic: md5sum, size
   - changed frequently: filepath and filename
@@ -17,3 +16,4 @@
 * check duplicated files(if fingerprint is the same, need check content md5)
 * pagination
 * show search info. example: About 2,760,000,000 results (0.22 seconds)
+* refine guess lanuage
