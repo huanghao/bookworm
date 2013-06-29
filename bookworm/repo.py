@@ -4,11 +4,9 @@ import time
 import logging
 import datetime
 
-from util import mkdir_p, get_ext, get_file_size, cd
-from reader import get_pdf_text, make_thumbnail
-from fingerprint import Fingerprint
-from image_search.search import main as image_search
-
+from bookworm.util import Fingerprint, mkdir_p, get_ext, get_file_size, cd
+from bookworm.reader import get_pdf_text, make_thumbnail
+from bookworm.image_search.search import main as image_search
 
 logger = logging.getLogger('repo')
 

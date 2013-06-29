@@ -1,5 +1,72 @@
 #coding: utf8
+import os
 import zlib
+import logging
+
+import xapian
+from mmseg.search import seg_txt_search
+
+logger = logging.getLogger(os.path.splitext(os.path.basename(__file__))[0])
+
+
+def search(dbpath, querystring, offset=0, pagesize=10):
+    # offset - defines starting point within result set
+    # pagesize - defines number of records to retrieve
+    
+    db = xapian.Database(dbpath)
+
+    known_prefix = {
+        'title': 'S',
+        'description': 'XD',
+        'key': 'Q',
+        }
+    contains_chinese, words = guess_keywords(querystring, known_prefix)
+    logger.debug('contains chinese: %d', contains_chinese)
+    logger.debug('words: %s', '\n'.join(words))
+
+    if contains_chinese:
+        if len(words) == 1:
+            query = xapian.Query(words[0])
+        else:
+            query = xapian.Query(xapian.Query.OP_AND,
+                [ xapian.Query(w) for w in words ])
+    else:
+        queryparser = xapian.QueryParser()
+        queryparser.set_stemmer(xapian.Stem("en"))
+        queryparser.set_stemming_strategy(queryparser.STEM_SOME)
+        for k, v in known_prefix.iteritems():
+            queryparser.add_prefix(k, v)
+        query = queryparser.parse_query(querystring)
+
+    enquire = xapian.Enquire(db)
+    enquire.set_query(query)
+    return enquire.get_mset(offset, pagesize)
+
+
+def guess_keywords(querystring, known_prefix=None):
+    stem = xapian.Stem('en')
+    words = []
+    contains_chinese = 0
+    for piece in querystring.split():
+        prefix = None
+        if known_prefix and ':' in piece:
+            qprefix, other = piece.split(':', 1)
+            if qprefix in known_prefix:
+                prefix = known_prefix[qprefix]
+                piece = other
+
+        for word in seg_txt_search(piece):
+            if ord(word[0]) <= 127: # english
+                word = stem(word)
+            else:
+                contains_chinese = 1
+            if prefix:
+                words.append(prefix + word)
+            else:
+                words.append(word)
+
+    return contains_chinese, words
+
 
 class Entropy:
 
@@ -65,6 +132,9 @@ classifier.register("chinese","""
 国际社会也期待中美关系能够不断改善和发展。中美两国合作好了，就可以做世界
 稳定的压舱石、世界和平的助推器。
 """)
+
+def guess_language(text):
+    return classifier.guess(text)
 
 
 if __name__=="__main__":

@@ -1,15 +1,13 @@
 import os
 import json
-
-from search import search
-from repo import key_to_path
+import argparse
 
 import cherrypy
 from mako.lookup import TemplateLookup
 
-db_path = os.path.join(os.path.dirname(__file__), 'db')
-repo_path = os.path.abspath(os.path.join(os.path.dirname(__file__), 'repo'))
-lib_path = os.path.abspath(os.path.join(os.path.dirname(__file__), 'ebook'))
+from bookworm.seg import search
+from bookworm.repo import key_to_path
+
 
 template_dir = os.path.join(os.path.dirname(__file__), 'template')
 lookup = TemplateLookup(directories=[template_dir])
@@ -52,7 +50,24 @@ class Root(object):
         return tmpl.render(**data)
 
 
+def parse_args():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--db-path', type=os.path.abspath,
+                        default='db', help='path to xapian db')
+    parser.add_argument('--repo-path', type=os.path.abspath,
+                        default='repo', help='path to repo')
+    parser.add_argument('--lib-path', type=os.path.expanduser,
+                        default='~/Documents/ebook/',
+                        help='path to ebook library')
+    return parser.parse_args()
+
+
 if __name__ == '__main__':
+    args = parse_args()
+    db_path = args.db_path
+    repo_path = args.repo_path
+    lib_path = args.lib_path
+
     cherrypy.config.update({
             'server.socket_host': '0.0.0.0',
             'server.socket_port': 8080,
