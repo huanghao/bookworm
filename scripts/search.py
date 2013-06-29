@@ -11,7 +11,8 @@ logger = logging.getLogger(os.path.splitext(os.path.basename(__file__))[0])
 
 
 def print_search(dbpath, querystring, offset=0, pagesize=10):
-    for match in search(dbpath, querystring, offset, pagesize):
+    doccount, mset = search(dbpath, querystring, offset, pagesize)
+    for match in mset:
         meta = json.loads(match.document.get_data())
         logger.info('[%0*d]:%s',
                     int(math.log(pagesize, 10)+1),
@@ -19,6 +20,9 @@ def print_search(dbpath, querystring, offset=0, pagesize=10):
                     #match.docid,
                     '\n'.join([i.replace('/home/huanghao/Documents/ebook/', '') for i in meta['paths']]))
         logger.debug(json.dumps(meta, indent=4))
+    logger.info('About %s results in %s docs',
+                mset.get_matches_estimated(),
+                doccount)
 
 
 def parse_args():

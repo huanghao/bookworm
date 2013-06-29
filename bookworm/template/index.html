@@ -5,6 +5,7 @@
     width:300px;
     height:300px;
     margin-right:2em;
+    overflow: hidden;
 }
 .search_form {
     width:40%;
@@ -43,6 +44,10 @@
     <input type='text' name='q' value="${q}" size="22" maxlength="60" class="search_input" autofocus="autofocus"/>
     <input type='submit' value='Search' class="search_button" />
 </form>
+
+%if doccount:
+<p style='color:gray'>About ${hits} results in ${doccount} docs</p>
+%endif
 
 %if q:
 %if result:

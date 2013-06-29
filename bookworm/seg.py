@@ -12,8 +12,8 @@ logger = logging.getLogger(os.path.splitext(os.path.basename(__file__))[0])
 def search(dbpath, querystring, offset=0, pagesize=10):
     # offset - defines starting point within result set
     # pagesize - defines number of records to retrieve
-    
     db = xapian.Database(dbpath)
+    doccount = db.get_doccount()
 
     known_prefix = {
         'title': 'S',
@@ -40,7 +40,8 @@ def search(dbpath, querystring, offset=0, pagesize=10):
 
     enquire = xapian.Enquire(db)
     enquire.set_query(query)
-    return enquire.get_mset(offset, pagesize)
+    mset = enquire.get_mset(offset, pagesize)
+    return doccount, mset
 
 
 def guess_keywords(querystring, known_prefix=None):

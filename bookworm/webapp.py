@@ -17,10 +17,12 @@ class Root(object):
 
     @cherrypy.expose
     def index(self, q=''):
-        result = []
+        result, hits, doccount = [], 0, 0
         if q:
             querystring = q.encode('utf8') if isinstance(q, unicode) else q
-            for match in search(db_path, querystring, pagesize=30):
+            doccount, mset = search(db_path, querystring, pagesize=30)
+            hits = mset.get_matches_estimated()
+            for match in mset:
                 meta = json.loads(match.document.get_data())
                 if not meta['paths']:
                     continue
@@ -45,9 +47,10 @@ class Root(object):
                 result.append(item)
 
         tmpl = lookup.get_template('index.html')
-        data = dict([ (name,locals().get(name))
-            for name in ('q', 'result') ])
-        return tmpl.render(**data)
+        return tmpl.render(q=q,
+                           result=result,
+                           hits=hits,
+                           doccount=doccount)
 
 
 def parse_args():
