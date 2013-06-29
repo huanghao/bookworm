@@ -100,7 +100,7 @@ class Repo(object):
 
         with cd(itempath):
             changed += self._update_info(key, docpath)
-            for field in ('text', 'thumb.png'):
+            for field in ('text', 'thumb.png', 'meta'):
                 if self._generate_field(field, key, docpath):
                     changed += 1
 

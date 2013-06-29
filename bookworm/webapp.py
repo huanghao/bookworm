@@ -13,40 +13,52 @@ template_dir = os.path.join(os.path.dirname(__file__), 'template')
 lookup = TemplateLookup(directories=[template_dir])
 
 
+def get_item(match):
+    meta = json.loads(match.document.get_data())
+    if not meta['paths']:
+        return
+
+    key = meta['key']
+    docpath = meta['paths'].keys()[0]
+    #FIXME: hardcode here
+    docpath = os.path.join('files', docpath.split('Documents/ebook/')[1])
+    kpath = key_to_path(key)
+
+    item = {
+        'rank': match.rank,
+        'docid': match.docid,
+        'filelink': docpath,
+        'title': os.path.splitext(os.path.basename(docpath))[0].replace('.', ' '),
+        'key': key,
+        }
+
+    thumbpath = os.path.join(kpath, 'thumb.png')
+    if os.path.exists(os.path.join(repo_path, thumbpath)):
+        item['thumb'] = os.path.join('repo', thumbpath)
+
+    metapath = os.path.join(repo_path, kpath, 'meta')
+    if os.path.exists(metapath):
+        item['meta'] = json.load(open(metapath))
+    return item
+
+
 class Root(object):
 
     @cherrypy.expose
     def index(self, q=''):
+        tmpl = lookup.get_template('index.html')
+        if not q:
+            return tmpl.render(q=q)
+
         result, hits, doccount = [], 0, 0
-        if q:
-            querystring = q.encode('utf8') if isinstance(q, unicode) else q
-            doccount, mset = search(db_path, querystring, pagesize=30)
-            hits = mset.get_matches_estimated()
-            for match in mset:
-                meta = json.loads(match.document.get_data())
-                if not meta['paths']:
-                    continue
-
-                key = meta['key']
-                path = meta['paths'].keys()[0]
-                #FIXME: hardcode here
-                path = os.path.join('files', path.split('Documents/ebook/')[1])
-
-                item = {
-                    'rank': match.rank,
-                    'docid': match.docid,
-                    'filelink': path,
-                    'title': os.path.basename(path),
-                    'key': key,
-                    }
-
-                thumbpath = os.path.join(key_to_path(key), 'thumb.png')
-                if os.path.exists(os.path.join(repo_path, thumbpath)):
-                    item['thumb'] = os.path.join('repo', thumbpath)
-
+        querystring = q.encode('utf8') if isinstance(q, unicode) else q
+        doccount, mset = search(db_path, querystring, pagesize=30)
+        hits = mset.get_matches_estimated()
+        for match in mset:
+            item = get_item(match)
+            if item:
                 result.append(item)
 
-        tmpl = lookup.get_template('index.html')
         return tmpl.render(q=q,
                            result=result,
                            hits=hits,
@@ -62,6 +74,8 @@ def parse_args():
     parser.add_argument('--lib-path', type=os.path.expanduser,
                         default='~/Documents/ebook/',
                         help='path to ebook library')
+    parser.add_argument('--host', default='localhost')
+    parser.add_argument('--port', default=8080, type=int)
     return parser.parse_args()
 
 
@@ -72,8 +86,8 @@ if __name__ == '__main__':
     lib_path = args.lib_path
 
     cherrypy.config.update({
-            'server.socket_host': '0.0.0.0',
-            'server.socket_port': 8080,
+            'server.socket_host': args.host,
+            'server.socket_port': args.port,
             })
 
     conf = {'/files': {'tools.staticdir.on': True,

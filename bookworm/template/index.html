@@ -2,9 +2,12 @@
 <style>
 .book {
     float:left;
+/*
     width:300px;
     height:300px;
+ */
     margin-right:2em;
+    margin-bottom: 2em;
     overflow: hidden;
 }
 .search_form {
@@ -45,12 +48,10 @@
     <input type='submit' value='Search' class="search_button" />
 </form>
 
-%if doccount:
-<p style='color:gray'>About ${hits} results in ${doccount} docs</p>
-%endif
-
 %if q:
 %if result:
+    <p style='color:gray'>About ${hits} results in ${doccount} docs</p>
+
     <ol>
         %for item in result:
         <li class="book">
@@ -62,8 +63,25 @@
               </a>
             </div>
             %endif
+
+            %if item.get('meta'):
+            <div>
+              %for site, info in item['meta'].iteritems():
+              <h3>${site}</h3>
+              <ul>
+                %for key, val in info.iteritems():
+                %if isinstance(val, list):
+                <li>${key} : ${' '.join(val)}</li>
+                %else:
+                <li>${key} : ${val}</li>
+                %endif
+                %endfor
+              </ul>
+              %endfor
+            </div>
+            %endif
         </li>
-    %endfor
+        %endfor
     </ol>
 %else:
     <p>Not found</p>

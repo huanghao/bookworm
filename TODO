@@ -12,3 +12,4 @@
 * setup ftp for uploading
 * check duplicated files(if fingerprint is the same, need check content md5)
 * pagination
+* Perl/perl will return different result
