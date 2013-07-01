@@ -9,8 +9,10 @@ fi
 
 source /home/huanghao/.virtualenvs/bookworm/bin/activate
 
-cd $(dirname $0)
+cd /home/huanghao/Documents/db
 
-time find /home/huanghao/Documents/ebook/ -name '*.pdf' | python index.py -v
+time find /home/huanghao/Documents/ebook/ -name '*.pdf' | walle.py  -v
+
+time index.py -v
 
 rm -f $LOCK_FILENAME

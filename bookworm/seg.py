@@ -46,7 +46,7 @@ def search(dbpath, querystring, offset=0, pagesize=10):
 
 def guess_keywords(querystring, known_prefix=None):
     stem = xapian.Stem('en')
-    words = []
+    words = set()
     contains_chinese = 0
     for piece in querystring.split():
         prefix = None
@@ -62,9 +62,9 @@ def guess_keywords(querystring, known_prefix=None):
             else:
                 contains_chinese = 1
             if prefix:
-                words.append(prefix + word)
+                words.add(prefix + word)
             else:
-                words.append(word)
+                words.add(word)
 
     return contains_chinese, words
 

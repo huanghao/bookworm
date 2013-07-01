@@ -73,7 +73,7 @@ class DB(object):
             logger.error(str(err))
             return
 
-        lang = guess_language.classifier.guess(text[:1024*100])
+        lang = guess_language(text[:1024*100])
         logger.debug('lanuage is %s' % lang)
 
         if lang == 'chinese':

@@ -22,16 +22,17 @@ def get_item(match):
     docpath = meta['paths'].keys()[0]
     #FIXME: hardcode here
     docpath = os.path.join('files', docpath.split('Documents/ebook/')[1])
-    kpath = key_to_path(key)
+    title = os.path.splitext(os.path.basename(docpath))[0].replace('.', ' ').replace('_', ' ')
 
     item = {
         'rank': match.rank,
         'docid': match.docid,
         'filelink': docpath,
-        'title': os.path.splitext(os.path.basename(docpath))[0].replace('.', ' '),
+        'title': title,
         'key': key,
         }
 
+    kpath = key_to_path(key)
     thumbpath = os.path.join(kpath, 'thumb.png')
     if os.path.exists(os.path.join(repo_path, thumbpath)):
         item['thumb'] = os.path.join('repo', thumbpath)

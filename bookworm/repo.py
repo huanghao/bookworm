@@ -126,7 +126,3 @@ if __name__ == '__main__':
     print 'mkdir repo2'
     for i in range(256):
         print 'mkdir repo2/%02x' % i
-
-    for key, itempath in Repo('repo').walk():
-        newpath = os.path.join('repo2', key[:2], key[2:])
-        print 'mv', itempath, newpath
