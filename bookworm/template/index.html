@@ -41,6 +41,17 @@
     height: 200px;
     margin: 5px 0;
 }
+.pagelink {
+    clear: both;
+}
+.pagelink li {
+    display: inline;
+    list-style: none;
+    margin-right: 1em;
+}
+.pagelink .current {
+    background-color: yellow;
+}
 </style>
 
 <form method='GET' class="search_form">
@@ -52,7 +63,21 @@
 %if result:
     <p style='color:gray'>About ${hits} results in ${doccount} docs</p>
 
-    <ol>
+    %if pages:
+    <ul class="pagelink">
+      %for i, (start, pagesize, is_cur) in enumerate(pages):
+      <li>
+        %if is_cur:
+        <span class="current">${i+1}</span>
+        %else:
+        <a href="/?q=${q}&offset=${start}&pagesize=${pagesize}">${i+1}</a>
+        %endif
+      </li>
+      %endfor
+    </ul>
+    %endif
+
+    <ul>
         %for item in result:
         <li class="book">
             <a href="${item['filelink']}" target="new">${item['title']}</a>
@@ -82,7 +107,21 @@
             %endif
         </li>
         %endfor
-    </ol>
+    </ul>
+
+    %if pages:
+    <ul class="pagelink">
+      %for i, (start, pagesize, is_cur) in enumerate(pages):
+      <li>
+        %if is_cur:
+        <span class="current">${i+1}</span>
+        %else:
+        <a href="/?q=${q}&offset=${start}&pagesize=${pagesize}">${i+1}</a>
+        %endif
+      </li>
+      %endfor
+    </ul>
+    %endif
 %else:
     <p>Not found</p>
 %endif

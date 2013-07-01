@@ -43,27 +43,46 @@ def get_item(match):
     return item
 
 
+def calculate_pages(total, offset, pagesize):
+    pages = []
+    for start in range(0, total, pagesize):
+        item = (start,
+                pagesize,
+                start <= offset < (start+pagesize),
+                )
+        pages.append(item)
+    return pages
+
+
 class Root(object):
 
     @cherrypy.expose
-    def index(self, q=''):
+    def index(self, q='', offset=0, pagesize=15):
         tmpl = lookup.get_template('index.html')
         if not q:
             return tmpl.render(q=q)
+        if offset:
+            offset = int(offset)
+        if pagesize:
+            pagesize = int(pagesize)
 
         result, hits, doccount = [], 0, 0
         querystring = q.encode('utf8') if isinstance(q, unicode) else q
-        doccount, mset = search(db_path, querystring, pagesize=30)
+        doccount, mset = search(db_path, querystring, offset, pagesize)
         hits = mset.get_matches_estimated()
         for match in mset:
             item = get_item(match)
             if item:
                 result.append(item)
 
+        pages = calculate_pages(hits, offset, pagesize)
+
         return tmpl.render(q=q,
                            result=result,
                            hits=hits,
-                           doccount=doccount)
+                           doccount=doccount,
+                           pages=pages,
+                           )
 
 
 def parse_args():

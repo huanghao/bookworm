@@ -66,7 +66,7 @@ def guess_keywords(querystring, known_prefix=None):
             else:
                 words.add(word)
 
-    return contains_chinese, words
+    return contains_chinese, list(words)
 
 
 class Entropy:

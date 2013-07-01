@@ -1,15 +1,8 @@
 * pdf2txt: content is (cid:4193) (cid:3944)
-* info in meta should be separated into different parts:
-  - basic: md5sum, size
-  - changed frequently: filepath and filename
-  - tricky to get: pdf meta
 * support multi format: chm, doc, text
 * maintain book files in repo
 * fix: pdf2txt may hang forever
-* refactor: split item from repo
 * find similar/duplicated book by content
-* web page text overlap
 * setup ftp for uploading
 * check duplicated files(if fingerprint is the same, need check content md5)
-* pagination
 * Perl/perl will return different result
