@@ -87,7 +87,7 @@ class Repo(object):
         else:
             return True
 
-    def put(self, docpath):
+    def put(self, docpath, search_meta=False):
         key = Fingerprint(docpath).hex()
         docpath = os.path.abspath(docpath)
 
@@ -100,7 +100,10 @@ class Repo(object):
 
         with cd(itempath):
             changed += self._update_info(key, docpath)
-            for field in ('text', 'thumb.png', 'meta'):
+            fields = ['text', 'thumb.png']
+            if search_meta:
+                fields.append('meta')
+            for field in fields:
                 if self._generate_field(field, key, docpath):
                     changed += 1
 

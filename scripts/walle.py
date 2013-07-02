@@ -18,7 +18,7 @@ def main(args):
 
     if args.pdf:
         for pdf in args.pdf:
-            repo.put(pdf)
+            repo.put(pdf, args.search_google_for_meta)
         return 0
 
     input_ = None
@@ -49,6 +49,7 @@ def parse_args():
         'This option conflict with the positional argument "pdf"')
     parser.add_argument('-v', '--verbose',
         action='store_true', help='turn on verbose mode')
+    parser.add_argument('--search-google-for-meta', action='store_true')
     return parser.parse_args()
 
 

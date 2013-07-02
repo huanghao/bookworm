@@ -35,6 +35,7 @@ class Douban(object):
             u'定价': 'price',
             u'装帧': 'paperback',
             u'丛书': 'series',
+            u'副标题': 'subhead',
             }
         # author, publisher, pub year, price, isbn etc.
         desc = html('#info').html()
