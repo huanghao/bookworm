@@ -4,6 +4,5 @@
 * maintain book files in repo
 * fix: pdf2txt may hang forever
 * find similar/duplicated book by content
-* setup ftp for uploading
 * check duplicated files(if fingerprint is the same, need check content md5)
 * Perl/perl will return different result
