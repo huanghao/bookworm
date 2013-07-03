@@ -21,8 +21,6 @@ class BasicReader(object):
         ext2format = {
             'doc': 'word',
             'docx': 'word',
-            'pdf': 'pdf',
-            'ppt': 'ppt',
             'pptx': 'ppt',
             }
         ext = get_ext(self.docpath)

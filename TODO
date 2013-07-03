@@ -1,6 +1,5 @@
 * pdf2txt: content is (cid:4193) (cid:3944)
 * pdf2txt will consume 100% disk io and nearly 90% of mem
-* support multi format: chm, text
 * maintain book files in repo
 * fix: pdf2txt may hang forever
 * find similar/duplicated book by content

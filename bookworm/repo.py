@@ -56,10 +56,17 @@ class Repo(object):
             logger.error('error occurs when generate %s for %s: %s',
                          field, key, err)
             return
+        else:
+            if val is None:
+                return
 
         if field == 'thumbnail':
             os.rename(val, filename)
             return 1
+
+        if field == 'html':
+            # html is a directory created from chm, needn't do anything here
+            return
 
         if field == 'info':
             val['key'] = key

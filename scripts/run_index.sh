@@ -11,7 +11,7 @@ source ~/.virtualenvs/bookworm/bin/activate
 
 cd ~/Documents/db
 
-time find ~/Documents/ebook/ -type f -regex '.*\.\(pdf\|doc\|docx\|ppt\|pptx\)$' | walle.py -v
+time find ~/Documents/ebook/ -type f -regex '.*\.\(pdf\|doc\|docx\|ppt\|pptx\|chm\)$' | walle.py -v
 
 time index.py -v
 
