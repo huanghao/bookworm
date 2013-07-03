@@ -9,34 +9,27 @@ from mmseg.search import seg_txt_search
 logger = logging.getLogger(os.path.splitext(os.path.basename(__file__))[0])
 
 
+known_prefix = {
+    'title': 'S',
+    'description': 'XD',
+    'key': 'Q',
+    }
+
 def search(dbpath, querystring, offset=0, pagesize=10):
     # offset - defines starting point within result set
     # pagesize - defines number of records to retrieve
     db = xapian.Database(dbpath)
     doccount = db.get_doccount()
 
-    known_prefix = {
-        'title': 'S',
-        'description': 'XD',
-        'key': 'Q',
-        }
     contains_chinese, words = guess_keywords(querystring, known_prefix)
     logger.debug('contains chinese: %d', contains_chinese)
     logger.debug('words: %s', '\n'.join(words))
 
-    if contains_chinese:
-        if len(words) == 1:
-            query = xapian.Query(words[0])
-        else:
-            query = xapian.Query(xapian.Query.OP_AND,
-                [ xapian.Query(w) for w in words ])
+    if len(words) == 1:
+        query = xapian.Query(words[0])
     else:
-        queryparser = xapian.QueryParser()
-        queryparser.set_stemmer(xapian.Stem("en"))
-        queryparser.set_stemming_strategy(queryparser.STEM_SOME)
-        for k, v in known_prefix.iteritems():
-            queryparser.add_prefix(k, v)
-        query = queryparser.parse_query(querystring)
+        query = xapian.Query(xapian.Query.OP_AND,
+                             [ xapian.Query(w) for w in words ])
 
     enquire = xapian.Enquire(db)
     enquire.set_query(query)
@@ -140,9 +133,6 @@ def guess_language(text):
 
 if __name__=="__main__":
     import sys
-
-    for name in sys.stdin:
-        name = name.rstrip()
-        text = open(name).read(1024)
-        print classifier.guess(text), name
-        print text[:10].strip()
+    contains_chinese, words = guess_keywords(' '.join(sys.argv[1:]), known_prefix)
+    print 'contains chinese:', contains_chinese
+    print '\n'.join(words)

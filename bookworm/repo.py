@@ -67,6 +67,8 @@ class Repo(object):
                 info = json.load(open('info'))
                 if not self._merge_path(info, val):
                     return
+            else:
+                info = val
             val = json.dumps(info)
 
         with open(filename, 'w') as fp:
