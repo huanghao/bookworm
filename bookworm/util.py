@@ -1,6 +1,12 @@
 import os
 import hashlib
+import datetime
 from contextlib import contextmanager
+
+
+
+def now():
+    return datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
 
 
 @contextmanager

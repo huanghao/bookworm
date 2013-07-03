@@ -8,3 +8,10 @@ if [ -z "$sub" ]; then
 else
     find $lib_path -type f -name \*.$sub | sort
 fi
+
+exit 0
+find ~/Documents/ebook/ -type f -regex '.*\.\(pdf\|doc\|docx\)$' | awk -F'.' '{print $NF}' | sort | uniq -c
+    354 doc
+     19 docx
+   2779 pdf
+

@@ -23,9 +23,11 @@ def main(args):
     if args.keys:
         for key in args.keys:
             itempath = os.path.join(args.repo_path, key_to_path(key))
+            logger.debug(itempath)
             db.index(key, itempath, args.force_index)
     else:
         for key, itempath in Repo(args.repo_path).walk():
+            logger.debug(itempath)
             db.index(key, itempath, args.force_index)
 
 

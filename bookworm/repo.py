@@ -2,17 +2,11 @@ import os
 import json
 import time
 import logging
-import datetime
 
-from bookworm.util import Fingerprint, mkdir_p, get_ext, get_file_size, cd
-from bookworm.reader import get_pdf_text, make_thumbnail
-from bookworm.image_search.search import main as image_search
+from bookworm.util import Fingerprint, mkdir_p, cd
+from bookworm.reader import get_reader
 
 logger = logging.getLogger('repo')
-
-
-def now():
-    return datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
 
 
 def key_to_path(key):
@@ -24,87 +18,81 @@ class Repo(object):
     def __init__(self, root):
         self.root = os.path.abspath(root)
 
-    def _generate_text(self, key, docpath):
-        text = get_pdf_text(docpath)
-        with open('text', 'w') as fp:
-            fp.write(text)
+    def _merge_path(self, oldinfo, newinfo):
+        oldpath = set(oldinfo['paths'][:])
 
-    def _generate_thumb_png(self, key, docpath):
-        make_thumbnail(docpath, 'thumb.png')
+        paths = set()
+        for path in oldinfo['paths']:
+            if os.path.exists(path):
+                paths.add(path)
+            else:
+                logger.info('clean nonexists docpath: %s', path)
 
-    def _update_info(self, key, docpath):
-        if os.path.exists('info'):
-            info = json.load(open('info'))
-            if not self._merge_path(docpath, info):
-                return 0
-        else:
-            info = {
-                'key': key,
-                'format': get_ext(docpath),
-                'size': get_file_size(docpath),
-                'paths': {
-                    docpath: now(),
-                    },
-                }
-        with open('info', 'w') as fp:
-            json.dump(info, fp)
-        return 1
+        # json.loads return unicode, so convert to unicode to compare
+        paths.add(newinfo['paths'][0].decode('utf8'))
 
-    def _merge_path(self, docpath, info):
-        changed = 0
-        # clean up non-exists path
-        for path in info['paths'].keys():
-            if not os.path.exists(path):
-                info['paths'].pop(path)
-                changed += 1
-                logger.info('clean non-exists path %s', path.encode('utf8'))
-
-        # json load string as unicode, in order to compare, change to unicode type first
-        upath = docpath if isinstance(docpath, unicode) else docpath.decode('utf8')
-        if upath not in info['paths']:
-            info['paths'][upath] = now()
-            changed += 1
-        return changed
-
-    def _generate_meta(self, key, docpath):
-        if os.path.exists('thumb.png'):
-            image_search('thumb.png', 'meta')
-
-    def _generate_field(self, field, key, docpath):
-        err_filename = '{}.err'.format(field)
-        if os.path.exists(err_filename) or os.path.exists(field):
+        if oldpath == paths:
             return
 
-        method = getattr(self, '_generate_{}'\
-                         .format(field.replace('.', '_')))
+        oldinfo['paths'] = list(paths)
+        return 1
+
+    def _generate_field(self, field, key, method):
+        field2filename = {
+            'thumbnail': 'thumb.png',
+            }
+
+        filename = field2filename.get(field, field)
+        err_filename = '{}.err'.format(filename)
+        if field != 'info' and os.path.exists(filename) or \
+                os.path.exists(err_filename):
+            return
+
         try:
-            method(key, docpath)
+            val = method()
         except Exception as err:
             with open(err_filename, 'w') as fp:
                 fp.write(str(err))
             logger.error('error occurs when generate %s for %s: %s',
                          field, key, err)
-        else:
-            return True
+            return
+
+        if field == 'thumbnail':
+            os.rename(val, filename)
+            return 1
+
+        if field == 'info':
+            val['key'] = key
+            if os.path.exists('info'):
+                info = json.load(open('info'))
+                if not self._merge_path(info, val):
+                    return
+            val = json.dumps(info)
+
+        with open(filename, 'w') as fp:
+            fp.write(val)
+        return 1
 
     def put(self, docpath, search_meta=False):
         key = Fingerprint(docpath).hex()
         docpath = os.path.abspath(docpath)
-
         changed = 0
-        itempath = os.path.join(self.root, key_to_path(key))
 
+        reader_class = get_reader(docpath)
+        if not reader_class:
+            logger.info('unknown doc type: %s', docpath)
+            return changed
+        reader = reader_class(docpath)
+
+        itempath = os.path.join(self.root, key_to_path(key))
         if not os.path.exists(itempath):
             mkdir_p(itempath)
             changed += 1
 
         with cd(itempath):
-            changed += self._update_info(key, docpath)
-            fields = ['text', 'thumb.png']
-            if search_meta:
-                fields.append('meta')
-            for field in fields:
-                if self._generate_field(field, key, docpath):
+            for field in reader.fields:
+                if self._generate_field(field, key,
+                                        lambda:reader.read(field)):
                     changed += 1
 
             if changed:

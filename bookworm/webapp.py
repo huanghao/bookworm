@@ -19,10 +19,10 @@ def get_item(match):
         return
 
     key = meta['key']
-    docpath = meta['paths'].keys()[0]
+    docpath = meta['paths'][0]
     #FIXME: hardcode here
     docpath = os.path.join('files', docpath.split('Documents/ebook/')[1])
-    title = os.path.splitext(os.path.basename(docpath))[0].replace('.', ' ').replace('_', ' ')
+    title = os.path.basename(docpath).replace('.', ' ').replace('_', ' ')
 
     item = {
         'rank': match.rank,

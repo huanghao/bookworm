@@ -7,11 +7,11 @@ if ! /usr/bin/lockfile -r 3 $LOCK_FILENAME; then
     exit 1
 fi
 
-source /home/huanghao/.virtualenvs/bookworm/bin/activate
+source ~/.virtualenvs/bookworm/bin/activate
 
-cd /home/huanghao/Documents/db
+cd ~/Documents/db
 
-time find /home/huanghao/Documents/ebook/ -name '*.pdf' | walle.py  -v
+time find ~/Documents/ebook/ -type f -regex '.*\.\(pdf\|doc\|docx\)$' | walle.py -v
 
 time index.py -v
 
