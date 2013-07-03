@@ -14,6 +14,6 @@ python search.py hack
 
 requirements beside of requirements.txt
 =======================================
-* catdoc: /usr/bin/catdoc
+* catdoc: /usr/bin/catdoc, /usr/bin/catppt
 * imagemagick: /usr/bin/convert
 
