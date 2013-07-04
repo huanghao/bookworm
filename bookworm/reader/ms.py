@@ -42,9 +42,16 @@ class CHMReader(BasicReader):
         if not os.path.isdir('html'):
             return
 
-        cmd = ['html2text']
-        logger.info('reading text from html: %s', ' '.join(cmd))
+        #find html -type f -regex '.*\.\(html\|htm\)' -exec cat {} \; | html2text | less
+        cmd1 = ['find', 'html',
+                '-type', 'f',
+                '-regex', r'.*\.\(htm\|html\)',
+                '-exec', 'cat', '{}', ';',
+                ]
+        cmd2 = ['html2text', '-']
+        logger.info('reading text from html: %s | %s', ' '.join(cmd1), ' '.join(cmd2))
 
-        cmd.extend(glob.glob('html/*.htm'))
-        cmd.extend(glob.glob('html/*.html'))
-        return check_output(cmd)
+        p1 = Popen(cmd1, stdout=PIPE)
+        p2 = Popen(cmd2, stdin=p1.stdout, stdout=PIPE)
+        p1.stdout.close() # Allow p1 to receive a SIGPIPE if p2 exits.
+        return p2.communicate()[0]

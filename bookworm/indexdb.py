@@ -57,14 +57,11 @@ class DB(object):
             title = '.'.join(basepart)
 
             contains_chinese, words = guess_keywords(title)
-            if contains_chinese:
-                logger.debug('title contains chinese')
-                for word in words:
-                    doc.add_term(word)
-                    doc.add_term('S' + word)
-                    logger.debug('index title word: %s', word)
-            else:
-                termgenerator.index_text(title, 1, 'S')
+            logger.debug('title contains chinese: %s', contains_chinese)
+            for word in words:
+                doc.add_term(word)
+                doc.add_term('S' + word)
+                logger.debug('index title word: %s', word)
 
     def _index_text(self, doc, termgenerator):
         try:
@@ -78,14 +75,15 @@ class DB(object):
 
         if lang == 'chinese':
             for word, value in seg_txt_2_dict(text).iteritems():
-                doc.add_term(word, value)
+                if word:
+                    doc.add_term(word, value)
         else:
             termgenerator.index_text(text)
 
     def index(self, key, itempath, force=False):
         filename = os.path.join(itempath, 'lastchange')
         try:
-            lastchange = int(open(filename).read())
+            lastchange = os.stat(filename).st_mtime
         except IOError as err:
             logger.error(str(err))
             return

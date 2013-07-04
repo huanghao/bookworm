@@ -1,5 +1,6 @@
 import os
 import sys
+import time
 import logging
 import argparse
 
@@ -19,16 +20,19 @@ def main(args):
         'please use -r to specify a correct repo path' % args.repo_path)
         return 1
 
+    nap = 0.
     db = DB(args.db_path)
     if args.keys:
         for key in args.keys:
             itempath = os.path.join(args.repo_path, key_to_path(key))
             logger.debug(itempath)
             db.index(key, itempath, args.force_index)
+            time.sleep(nap)
     else:
         for key, itempath in Repo(args.repo_path).walk():
             logger.debug(itempath)
             db.index(key, itempath, args.force_index)
+            time.sleep(nap)
 
 
 def parse_args():
